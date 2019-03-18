@@ -1,0 +1,13 @@
+E:\DevelopWork\ZJDEMO\WebApplication1\WebApplication1\bin\Release\netcoreapp2.0\win-x64\hostpolicy.dll
+E:\DevelopWork\ZJDEMO\WebApplication1\WebApplication1\bin\Release\netcoreapp2.0\win-x64\hostfxr.dll
+E:\DevelopWork\ZJDEMO\WebApplication1\WebApplication1\bin\Release\netcoreapp2.0\win-x64\WebApplication1.exe
+E:\DevelopWork\ZJDEMO\WebApplication1\WebApplication1\bin\Release\netcoreapp2.0\win-x64\WebApplication1.deps.json
+E:\DevelopWork\ZJDEMO\WebApplication1\WebApplication1\bin\Release\netcoreapp2.0\win-x64\WebApplication1.runtimeconfig.json
+E:\DevelopWork\ZJDEMO\WebApplication1\WebApplication1\bin\Release\netcoreapp2.0\win-x64\WebApplication1.runtimeconfig.dev.json
+E:\DevelopWork\ZJDEMO\WebApplication1\WebApplication1\bin\Release\netcoreapp2.0\win-x64\WebApplication1.dll
+E:\DevelopWork\ZJDEMO\WebApplication1\WebApplication1\bin\Release\netcoreapp2.0\win-x64\WebApplication1.pdb
+E:\DevelopWork\ZJDEMO\WebApplication1\WebApplication1\obj\Release\netcoreapp2.0\win-x64\WebApplication1.csproj.CoreCompileInputs.cache
+E:\DevelopWork\ZJDEMO\WebApplication1\WebApplication1\obj\Release\netcoreapp2.0\win-x64\WebApplication1.AssemblyInfoInputs.cache
+E:\DevelopWork\ZJDEMO\WebApplication1\WebApplication1\obj\Release\netcoreapp2.0\win-x64\WebApplication1.AssemblyInfo.cs
+E:\DevelopWork\ZJDEMO\WebApplication1\WebApplication1\obj\Release\netcoreapp2.0\win-x64\WebApplication1.dll
+E:\DevelopWork\ZJDEMO\WebApplication1\WebApplication1\obj\Release\netcoreapp2.0\win-x64\WebApplication1.pdb
