@@ -340,5 +340,16 @@ namespace WebApplication1.Repos
         }
         #endregion
 
+        #region 总体指标计算
+        //code
+        //线网
+
+        //线路
+
+        //中途站
+
+        //场站
+        #endregion
+
     }
 }

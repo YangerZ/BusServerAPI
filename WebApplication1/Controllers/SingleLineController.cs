@@ -40,7 +40,6 @@ namespace WebApplication1.Controllers
 
 
         #region 指标计算
-
         [HttpPost("Target")]
         public JsonResult GetLineTargetValues([FromBody] LineTargetParam lineparams)
         {
