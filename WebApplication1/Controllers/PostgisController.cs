@@ -247,6 +247,23 @@ namespace WebApplication1.Controllers
                 return Json(new { success = "404", error = ex.ToString() });
             }
         }
+        [HttpPost, Route("BusLines/Query")]
+        public JsonResult QueryBusLines([FromBody] JObject param_plan)
+        {
+            try
+            {
+                List<BusLine> temp = null;
+                string express = param_plan["express"].ToString();
+                temp = myPostRepo.Query_T_BusLine(express);
+                return Json(new { success = "200", data = temp });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = "404", error = ex.ToString() });
+            }
+        }
+
+
         [HttpGet, Route("GetOrganizeInfos")]
         public JsonResult GetOrganizeInfo()
         {
@@ -535,6 +552,22 @@ namespace WebApplication1.Controllers
                 return Json(new { success = "404", error = ex.ToString() });
             }
 
+        }
+
+        [HttpPost, Route("PlanInfo/Query")]
+        public JsonResult QueryPlanInfos([FromBody] JObject param_plan)
+        {
+            try
+            {
+                IEnumerable<t_plan_line> temp = null;
+                string express = param_plan["express"].ToString();
+                temp = myPostRepo.Query_T_PlanInfo(express);
+                return Json(new { success = "200", data = temp });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = "404", error = ex.ToString() });
+            }
         }
         //Get bus/spatial/guid
         [HttpGet, Route("PlanInfo/{planid}")]

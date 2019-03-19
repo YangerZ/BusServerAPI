@@ -203,6 +203,15 @@ namespace WebApplication1.Repos
                 return query.ToList();
             }
         }
+        public List<BusLine> Query_T_BusLine(string express)
+        {
+            using (IDbConnection connection = new NpgsqlConnection(connectionString))
+            {
+                string sql = "SELECT  lineguid,name,isdefault,type,direction,first,last,interval,mileage,time,parentguid,company FROM t_busLine "+express;
+                var query = connection.Query<BusLine>(sql);
+                return query.ToList();
+            }
+        }
         //t_organizationinfo
         public List<OrganizeInfo> GetAll_T_OrganizeInfo()
         {
@@ -523,6 +532,15 @@ namespace WebApplication1.Repos
                 throw ex;
             }
 
+        }
+        public IEnumerable<t_plan_line> Query_T_PlanInfo(string expression)
+        {
+            string querysql = "Select * from t_plan_line "+expression;
+            using (IDbConnection connection = new NpgsqlConnection(connectionString))
+            {
+                var query = connection.Query<t_plan_line>(querysql);
+                return query;
+            }
         }
         public t_plan_line GetSingle_T_PlanInfo(string planid)
         {
