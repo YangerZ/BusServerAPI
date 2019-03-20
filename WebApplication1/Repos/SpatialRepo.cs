@@ -53,7 +53,6 @@ namespace WebApplication1.Repos
         //计算一次换成经过的线路个数
         public int GetLineNumbersByOnce(string lineguid, int direct)
         {
-            
             IEnumerable<t_linepoint> res = null;
             string sql = "SELECT * FROM  t_linepoint where lineguid='" + lineguid + "' and direction=" + direct + " order by ordernumber asc";
             List<int> datas = new List<int>();
@@ -343,12 +342,114 @@ namespace WebApplication1.Repos
         #region 总体指标计算
         //code
         //线网
-
+        public decimal GetRegionAreaById(int gid)
+        {
+            var area = 0.0m;
+            string querysql = "Select  * from t_division where gid=" + gid;
+            t_division result = null;
+            using (IDbConnection connection = new NpgsqlConnection(connectionString))
+            {
+                result = connection.Query<t_division>(querysql).FirstOrDefault();
+                if(result!=null)
+                {
+                    area = result.area;
+                }
+            }
+            return area;
+        }
+        public decimal ST_RoadNetLength_Region(int gid)
+        {
+            //select ST_Length(
+            //            (
+            //                select  st_intersection(
+            //                    (select geom from t_division where gid = 116)::geometry,
+            //           (select ST_Union(geom) from t_roadcollection) ::geometry
+            //       )
+            //    )::geography,false
+            //)
+            decimal totallength = 0.0m;
+            string regiongeom = "(select geom from t_division where gid ="+gid+")::geometry";
+            string unionroadline = "(select ST_Union(geom) from t_roadcollection)::geometry";
+            string intersection = "(select  st_intersection(" + unionroadline +"," +regiongeom+"))::geography";
+            string calsql = "select ST_Length(" + intersection + ",false)";
+            //execute db sql
+            using (var con = Connection)
+            {
+                con.Open();
+                using (var cmd = new NpgsqlCommand(calsql, con))
+                using (var reader = cmd.ExecuteReader())
+                    while (reader.Read())
+                    {
+                        object t = reader.GetValue(0);
+                        decimal.TryParse(t.ToString(), out totallength);
+                        break;
+                    }
+            }
+            return totallength;
+        }
         //线路
+        public decimal ST_BusLineCount_Region(int gid)
+        {
+            //            select count(*)  from
+            //(
+            // SELECT distinct busline.lineguid AS guid
+            // FROM t_busline_shape busline, (select * from t_division where gid = 116)   region
+            // WHERE  st_intersects(region.geom, busline.geom) = 't'
+            // ) as t
+            decimal total = 0.0m;
+            //intersects:1 true,0 false
+            string regiongeom = "(select * from t_division where gid ="+gid+") region";
+            string intersects = "SELECT distinct busline.lineguid AS guid FROM t_busline_shape busline, " + regiongeom +
+                    " WHERE  st_intersects(region.geom, busline.geom) = 't'";
+            string calsql = "select count(*)  from ("+ intersects + ") as t";
+            using (var con = Connection)
+            {
+                con.Open();
+                using (var cmd = new NpgsqlCommand(calsql, con))
+                using (var reader = cmd.ExecuteReader())
+                    while (reader.Read())
+                    {
+                        object t = reader.GetValue(0);
+                        decimal.TryParse(t.ToString(), out total);
+                        break;
+                    }
+            }
+            return total;
+        }
+        public decimal ST_BusLineLength_Region(int gid)
+        {
+            decimal total = 0.0m;
+            //   select ST_Length(
+            //   (
+            //       select st_intersection(
+            //           (select geom from t_division where gid = 116)::geometry,
+            //           (select ST_Union(geom) from t_busline_shape where direction = 0) ::geometry
+            //       )
+            //    )::geography,false
+            //)
+           
+            string regiongeom = "(select geom from t_division where gid = "+gid+")::geometry";
+            string linegeoms = "(select ST_Union(geom) from t_busline_shape where direction = 0) ::geometry";
+            string intersection = "select  st_intersection(" + regiongeom + "," + linegeoms + ")";
+            string calsql = "select ST_Length(("+ intersection + ")::geography,false)";
+            using (var con = Connection)
+            {
+                con.Open();
+                using (var cmd = new NpgsqlCommand(calsql, con))
+                using (var reader = cmd.ExecuteReader())
+                    while (reader.Read())
+                    {
+                        object t = reader.GetValue(0);
+                        decimal.TryParse(t.ToString(), out total);
+                        break;
+                    }
+            }
+            return total;
+        }
 
         //中途站
 
-        //场站
+        //场站Leave  To Cain
         #endregion
 
     }

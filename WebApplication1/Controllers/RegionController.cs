@@ -9,6 +9,7 @@ using WebApplication1.Repos;
 
 namespace WebApplication1.Controllers
 {
+    [Route("bus/[controller]")]
     public class RegionController : Controller
     {
         public DbConfig dbcofig;
@@ -39,13 +40,20 @@ namespace WebApplication1.Controllers
         {
             try
             {
-                var gid = regionparams["gid"].ToString();
+                var gid = int.Parse(regionparams["gid"].ToString());
                 //计算过程
                 /*
                  * code
                  * 
                  */
                 //返回值
+                var  net_length = mySpatialRepo.ST_RoadNetLength_Region(gid);
+                var net_area = mySpatialRepo.GetRegionAreaById(gid);
+                var net_density = net_length / net_area;
+                var busline_count = mySpatialRepo.ST_BusLineCount_Region(gid);
+                var busline_length = mySpatialRepo.ST_BusLineLength_Region(gid);
+                var busline_density= busline_length / net_area;
+
                 return Json(new
                 {
                     success = "200",
@@ -64,7 +72,7 @@ namespace WebApplication1.Controllers
         {
             try
             {
-                var gid = regionparams["gid"].ToString();
+                var gid =int.Parse(regionparams["gid"].ToString());
                 var planid = regionparams["panid"].ToString();
                 var lineguid= regionparams["lineguid"].ToString();
                 //计算过程
