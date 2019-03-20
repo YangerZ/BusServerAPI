@@ -544,8 +544,8 @@ namespace WebApplication1.Controllers
             // return null ;
             try
             {
-                var obj = myPostRepo.GetPlanInfoAllTable();
-                return Json(new { success = "200", data = obj });
+                IEnumerable<t_plan_line> queryall= myPostRepo.GetPlanInfoAllTable();
+                return Json(new { success = "200", data = queryall });
             }
             catch (Exception ex)
             {

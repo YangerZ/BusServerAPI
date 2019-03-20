@@ -388,7 +388,7 @@ namespace WebApplication1.Repos
             return totallength;
         }
         //线路
-        public decimal ST_BusLineCount_Region(int gid)
+        public int ST_BusLineCount_Region(int gid)
         {
             //            select count(*)  from
             //(
@@ -396,7 +396,7 @@ namespace WebApplication1.Repos
             // FROM t_busline_shape busline, (select * from t_division where gid = 116)   region
             // WHERE  st_intersects(region.geom, busline.geom) = 't'
             // ) as t
-            decimal total = 0.0m;
+           int total = 0;
             //intersects:1 true,0 false
             string regiongeom = "(select * from t_division where gid ="+gid+") region";
             string intersects = "SELECT distinct busline.lineguid AS guid FROM t_busline_shape busline, " + regiongeom +
@@ -410,7 +410,7 @@ namespace WebApplication1.Repos
                     while (reader.Read())
                     {
                         object t = reader.GetValue(0);
-                        decimal.TryParse(t.ToString(), out total);
+                        int.TryParse(t.ToString(), out total);
                         break;
                     }
             }
@@ -448,8 +448,152 @@ namespace WebApplication1.Repos
         }
 
         //中途站
+        public int ST_BusStopCount_Region(int gid)
+        {
+            int count = 0;
+            //   select count(*)  from
+            //(
+            // SELECT busstation.gid AS gid
+            // FROM(select * from t_pointinfo where type = 0) busstation, (select * from t_division where gid = 116)   region
+            // WHERE  st_intersects(busstation.geom, region.geom) = 't'
+            //) as t
+            string bustation = "(select * from t_pointinfo where type = 0) busstation";
+            string regiongeom = " (select * from t_division where gid = 116)   region";
+            string intersects = " SELECT busstation.gid AS gid FROM " + bustation + "," + regiongeom
+            +" WHERE  st_intersects(busstation.geom, region.geom) = 't'";
+            string calsql = " select count(*)  from("+ intersects + ") as t";
+            using (var con = Connection)
+            {
+                con.Open();
+                using (var cmd = new NpgsqlCommand(calsql, con))
+                using (var reader = cmd.ExecuteReader())
+                    while (reader.Read())
+                    {
+                        object t = reader.GetValue(0);
+                        int.TryParse(t.ToString(), out count);
+                        break;
+                    }
+            }
+            return count;
+        }
 
+        public int ST_BusStopTransfer_Count(int gid)
+        {
+            int count = 0;
+            //   select count(*)  from
+            //(
+            // SELECT busstation.gid AS gid
+            // FROM(select * from t_pointinfo where type = 0) busstation, (select * from t_division where gid = 116)   region
+            // WHERE  st_intersects(busstation.geom, region.geom) = 't'
+            //) as t
+            string bustation = "(select * from t_pointinfo where type = 0) busstation";
+            string regiongeom = " (select * from t_division where gid = 116)   region";
+            string intersects = " SELECT busstation.pid AS pid FROM " + bustation + "," + regiongeom
+            + " WHERE  st_intersects(busstation.geom, region.geom) = 't'";
+            string calsql = " select pid  from(" + intersects + ") as t";
+            using (var con = Connection)
+            {
+                 IEnumerable<int> pids = con.Query<int>(calsql);
+                if (pids == null || pids.Count() == 0)
+                {
+                    count= 0;
+                }
+                else {
+                    string pidlist = String.Join(',', pids.ToList<int>());
+                    string countsql = "select count(*)  FROM  t_linepoint where pid in（" + pidlist + "）group by pid  having  count(distinct lineguid)>1";
+                    count = con.Query(countsql).FirstOrDefault(); 
+                }
+            }
+            return count;
+        }
+
+        public decimal ST_BusStopCover_Region(int gid,string bufferradius)
+        {
+            decimal result = 0.0m;
+            string regiongeom = "(select geom from t_division where gid = " + gid + ")::geometry";
+            string buffer = "(select ST_Union(geom) from "+bufferradius+" where direction = 0) ::geometry";
+            if (bufferradius == "0")
+            {
+                return result;
+            }
+            string intersection300 = "select  st_intersection(" + regiongeom + "," + buffer + ")";
+            string calsql = "select ST_Area((" + intersection300 + ")::geography,false)";
+            using (var con = Connection)
+            {
+                con.Open();
+                var cover= con.Query(calsql).FirstOrDefault();
+                result = decimal.Parse(cover);
+            }
+            return result;
+        }
         //场站Leave  To Cain
+        public int ST_BusStationCount_Region(int gid)
+        {
+            int total = 0;
+            string regiongeom = "(select * from t_division where gid =" + gid + ") region";
+            string intersects = "SELECT * FROM t_bus_station_polygon station, " + regiongeom +
+                    " WHERE  st_intersects(region.geom, station.geom) = 't'";
+            string calsql = "select count(*)  from (" + intersects + ") as t";
+            using (var con = Connection)
+            {
+                con.Open();
+                using (var cmd = new NpgsqlCommand(calsql, con))
+                using (var reader = cmd.ExecuteReader())
+                    while (reader.Read())
+                    {
+                        object t = reader.GetValue(0);
+                        int.TryParse(t.ToString(), out total);
+                        break;
+                    }
+            }
+            return total;
+        }
+
+        public decimal ST_BusStationArea_Region(int gid)
+        {
+            decimal area = 0.0m;
+            string regiongeom = "(select * from t_division where gid =" + gid + ") region";
+            string intersects = "SELECT * FROM t_bus_station_polygon station, " + regiongeom +
+                    " WHERE  st_intersects(region.geom, station.geom) = 't'";
+            string calsql = "select round(sum(t.jzmj),2) from (" + intersects + ") as t";
+            using (var con = Connection)
+            {
+                con.Open();
+                using (var cmd = new NpgsqlCommand(calsql, con))
+                using (var reader = cmd.ExecuteReader())
+                    while (reader.Read())
+                    {
+                        object t = reader.GetValue(0);
+                        decimal.TryParse(t.ToString(), out area);
+                        break;
+                    }
+            }
+            return area;
+        }
+
+        public int ST_BusStationRepairCount_Region(int gid)
+        {
+            int total = 0;
+            string regiongeom = "(select * from t_division where gid =" + gid + ") region";
+            string intersects = "SELECT * FROM t_bus_station_polygon station, " + regiongeom +
+                    " WHERE  st_intersects(region.geom, station.geom) = 't'";
+            string calsql = "select count(*)  from (" + intersects + ") as t where gn like '%修车%'";
+            using (var con = Connection)
+            {
+                con.Open();
+                using (var cmd = new NpgsqlCommand(calsql, con))
+                using (var reader = cmd.ExecuteReader())
+                    while (reader.Read())
+                    {
+                        object t = reader.GetValue(0);
+                        int.TryParse(t.ToString(), out total);
+                        break;
+                    }
+            }
+            return total;
+        }
+
+
         #endregion
 
     }

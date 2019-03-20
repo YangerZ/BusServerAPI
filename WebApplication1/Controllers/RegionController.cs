@@ -53,11 +53,41 @@ namespace WebApplication1.Controllers
                 var busline_count = mySpatialRepo.ST_BusLineCount_Region(gid);
                 var busline_length = mySpatialRepo.ST_BusLineLength_Region(gid);
                 var busline_density= busline_length / net_area;
+                var stop_count = mySpatialRepo.ST_BusStopCount_Region(gid);
+                var stoptransfer_count =mySpatialRepo.ST_BusStopTransfer_Count(gid);
+                var cover300 = mySpatialRepo.ST_BusStopCover_Region(gid, "0");
+                cover300 = cover300 / net_area;
+                var cover500 = mySpatialRepo.ST_BusStopCover_Region(gid, "0") / net_area;
+                cover500 = cover500 / net_area;
+                var cover600 = mySpatialRepo.ST_BusStopCover_Region(gid, "0") / net_area;
+                cover600 = cover600 / net_area;
+
+                var station_count = mySpatialRepo.ST_BusStationCount_Region(gid);
+                var station_area = mySpatialRepo.ST_BusStationArea_Region(gid);
+                var station_repair_count = mySpatialRepo.ST_BusStationRepairCount_Region(gid);
 
                 return Json(new
                 {
                     success = "200",
-                    data = new { }
+                    data = new {
+                        //线网
+                        netlength = net_length,
+                        netdensity = net_density,
+                        //线路
+                        buslinecount = busline_count,
+                        buslinelength = busline_length,
+                        buslinedensity = busline_density,
+                        //中途站
+                        stopcount = stop_count,
+                        stoptransfercount = stoptransfer_count,
+                        cover300ratio = cover300,
+                        cover500ratio = cover500,
+                        cover600ratio = cover600,
+                        //场站
+                        stationcount = station_count,
+                        stationarea = station_area,
+                        stationrepaircount = station_repair_count
+                    }
 
                 });
             }

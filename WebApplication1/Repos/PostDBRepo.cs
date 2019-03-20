@@ -515,17 +515,15 @@ namespace WebApplication1.Repos
         //Results T_Plan_Infos
         public IEnumerable<t_plan_line> GetPlanInfoAllTable()
         {
-            StringBuilder tsb = new StringBuilder();
+             
             try
             {
-                string sql = "select * from t_plan_line";
+                string sql = "select * from t_plan_line order by createtime desc";
                 using (IDbConnection connection = new NpgsqlConnection(connectionString))
                 {
-
                     IEnumerable<t_plan_line> query = connection.Query<t_plan_line>(sql);
                     return query;
                 }
-
             }
             catch (Exception ex)
             {
