@@ -1,5 +1,6 @@
 # BusServerAPI
-#Database Postgresql
-# Asp.Net Core 2.0
-#VS 2017
+Development:
+Database Postgresql
+Asp.Net Core 2.0
+VS 2017
 
