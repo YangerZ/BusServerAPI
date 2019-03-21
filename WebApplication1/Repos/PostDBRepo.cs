@@ -920,9 +920,9 @@ namespace WebApplication1.Repos
                 //ordernumber pid
                 //组成查询数据
                 IEnumerator<t_linepoint> myenumerate = linepoints.GetEnumerator();
-                t_linepoint temp = null;
-                
-                int i = 0;
+                myenumerate.MoveNext();
+               t_linepoint temp=myenumerate.Current;
+               int i = 0;
                 while (myenumerate.MoveNext())
                 {
                     i++;
@@ -933,15 +933,14 @@ namespace WebApplication1.Repos
                     }
                     int order_start = current.ordernumber;
                     int startpid = current.pid;
-                    if (i % 2 == 0)
-                    {
+                    //开始记录参数
                         int[] obj = new int[4];
                         obj[0] = temp.ordernumber; //Order number
                         obj[1] = current.ordernumber; 
                         obj[2] = temp.pid;//Pid
                         obj[3] = current.pid ;
                         listquery.Add(obj);
-                    }
+                   
                     temp = current;
                    
                 }
@@ -951,6 +950,7 @@ namespace WebApplication1.Repos
             //使用上步的站点号和顺序号参数组来查询,计算长度,UnionLine线
             //然后调用添加计划线路方法添加到计划的表中
             List<t_plan_lineshape> templist = new List<t_plan_lineshape>();
+            List<Coordinate[]> temppoits = new List<Coordinate[]>();
             using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
             {
                 connection.Open();
@@ -959,21 +959,24 @@ namespace WebApplication1.Repos
                 {
                     return false;
                 }
-
+                int k = 0;
                 foreach (int[] item in listquery)
                 {
                     start = item[0];
                     end = item[1];
-                    string unionsql = "Select sum(t.length)as length ,ST_UNION(t.geom)  as geom " +
+                    string unionsql = "Select sum(t.length)as length ,ST_LineMerge(ST_UNION(t.geom))  as geom " +
                "from  (SELECT  distinct startpid ,* FROM t_busline_shape" +
                " where lineguid = '" + lineguid + "' and direction = " + direct + "  and(ordernumber >= " + start + " and ordernumber < " + end + ") ) as t";
                     unionline uline = connection.Query<unionline>(unionsql).FirstOrDefault();
                     t_plan_lineshape templine = new t_plan_lineshape();
-                    
+                    k++;
+                    templine.ordernumber =k;
                     templine.planid = planid;
                     templine.startpid = item[2];
                     templine.endpid = item[3];
                     templine.length = uline.length;
+                    Coordinate[] temp = uline.geom.Coordinates;
+                    temppoits.Add(temp);
                     if (uline.geom.GeometryType == "LineString")
                     {
                         templine.geom = uline.geom as LineString;
