@@ -10,6 +10,7 @@ using WebApplication1.Repos;
 using static System.Data.CommandType;
 using WebApplication1.Models;
 using NetTopologySuite.Geometries;
+using GeoAPI.Geometries;
 
 namespace WebApplication1.Repos
 {
@@ -446,7 +447,6 @@ namespace WebApplication1.Repos
             }
             return total;
         }
-
         //中途站
         public int ST_BusStopCount_Region(int gid)
         {
@@ -458,8 +458,8 @@ namespace WebApplication1.Repos
             // WHERE  st_intersects(busstation.geom, region.geom) = 't'
             //) as t
             string bustation = "(select * from t_pointinfo where type = 0) busstation";
-            string regiongeom = " (select * from t_division where gid = 116)   region";
-            string intersects = " SELECT busstation.gid AS gid FROM " + bustation + "," + regiongeom
+            string regiongeom = " (select * from t_division where gid = "+gid+")   region";
+            string intersects = " SELECT busstation.pid AS pid FROM " + bustation + "," + regiongeom
             +" WHERE  st_intersects(busstation.geom, region.geom) = 't'";
             string calsql = " select count(*)  from("+ intersects + ") as t";
             using (var con = Connection)
@@ -476,7 +476,6 @@ namespace WebApplication1.Repos
             }
             return count;
         }
-
         public int ST_BusStopTransfer_Count(int gid)
         {
             int count = 0;
@@ -487,7 +486,7 @@ namespace WebApplication1.Repos
             // WHERE  st_intersects(busstation.geom, region.geom) = 't'
             //) as t
             string bustation = "(select * from t_pointinfo where type = 0) busstation";
-            string regiongeom = " (select * from t_division where gid = 116)   region";
+            string regiongeom = " (select * from t_division where gid ="+gid+")   region";
             string intersects = " SELECT busstation.pid AS pid FROM " + bustation + "," + regiongeom
             + " WHERE  st_intersects(busstation.geom, region.geom) = 't'";
             string calsql = " select pid  from(" + intersects + ") as t";
@@ -500,35 +499,35 @@ namespace WebApplication1.Repos
                 }
                 else {
                     string pidlist = String.Join(',', pids.ToList<int>());
-                    string countsql = "select count(*)  FROM  t_linepoint where pid in（" + pidlist + "）group by pid  having  count(distinct lineguid)>1";
-                    count = con.Query(countsql).FirstOrDefault(); 
+                    string countsql = "select count(*)  FROM  t_linepoint where pid in (" + pidlist + ") group by pid  having  count(distinct lineguid)>1";
+                    count = con.Query<int>(countsql).FirstOrDefault(); 
                 }
             }
             return count;
         }
-
         public decimal ST_BusStopCover_Region(int gid,string bufferradius)
         {
             decimal result = 0.0m;
             string regiongeom = "(select geom from t_division where gid = " + gid + ")::geometry";
-            string buffer = "(select ST_Union(geom) from "+bufferradius+" where direction = 0) ::geometry";
-            if (bufferradius == "0")
+            string buffer = "(select geom from "+bufferradius+") ::geometry";
+            if (String.IsNullOrEmpty(bufferradius))
             {
                 return result;
             }
-            string intersection300 = "select  st_intersection(" + regiongeom + "," + buffer + ")";
-            string calsql = "select ST_Area((" + intersection300 + ")::geography,false)";
+            string intersection = "select  st_intersection(" + regiongeom + "," + buffer + ")";
+            string calsql = "select ST_Area((" + intersection + ")::geography,false)";
             using (var con = Connection)
             {
                 con.Open();
-                var cover= con.Query(calsql).FirstOrDefault();
-                result = decimal.Parse(cover);
+                var cover= con.Query<float>(calsql).FirstOrDefault();
+                result = decimal.Parse(cover.ToString());
             }
             return result;
         }
         //场站Leave  To Cain
         public int ST_BusStationCount_Region(int gid)
         {
+            //select st_intersects(select st_union(geom) from t_busline_shape where lineguid='EE172CA1-4C44-4AD2-A53F-966F62AD3F03' and direction=0,select distinct geom from t_division where gid=116)
             int total = 0;
             string regiongeom = "(select * from t_division where gid =" + gid + ") region";
             string intersects = "SELECT * FROM t_bus_station_polygon station, " + regiongeom +
@@ -548,14 +547,15 @@ namespace WebApplication1.Repos
             }
             return total;
         }
-
         public decimal ST_BusStationArea_Region(int gid)
         {
+            //
+            //            select count(*) from(SELECT * FROM t_bus_station_polygon station, (select * from t_division where gid = 116) region WHERE  st_intersects(region.geom, station.geom) = 't') as t
             decimal area = 0.0m;
             string regiongeom = "(select * from t_division where gid =" + gid + ") region";
             string intersects = "SELECT * FROM t_bus_station_polygon station, " + regiongeom +
                     " WHERE  st_intersects(region.geom, station.geom) = 't'";
-            string calsql = "select round(sum(t.jzmj),2) from (" + intersects + ") as t";
+            string calsql = "select sum(t.jzmj) from (" + intersects + ") as t";
             using (var con = Connection)
             {
                 con.Open();
@@ -570,9 +570,10 @@ namespace WebApplication1.Repos
             }
             return area;
         }
-
         public int ST_BusStationRepairCount_Region(int gid)
         {
+            //select round(sum(t.jzmj),2) from(SELECT * FROM t_bus_station_polygon station, (select * from t_division where gid = 116) region WHERE  st_intersects(region.geom, station.geom) = 't') as t
+            //select count(*) from(SELECT * FROM t_bus_station_polygon station, (select * from t_division where gid = 116) region WHERE  st_intersects(region.geom, station.geom) = 't') as t where gn like '%修车%'
             int total = 0;
             string regiongeom = "(select * from t_division where gid =" + gid + ") region";
             string intersects = "SELECT * FROM t_bus_station_polygon station, " + regiongeom +
@@ -592,7 +593,401 @@ namespace WebApplication1.Repos
             }
             return total;
         }
+        #endregion
 
+        #region 规划总体指标计算
+        
+        /*
+         some functions ready for calculate Area Length Intersection Buffer
+             */
+        //判断排除线路是否在区域内
+        public bool BusLineIntersectsRegion(int gid, string lineguid)
+        {
+            //            select st_intersects(
+            //(select geom from t_division where gid= 116157),
+            //(select st_union(geom) from t_busline_shape where
+            //         lineguid = 'EE172CA1-4C44-4AD2-A53F-966F62AD3F03' and direction = 0)
+            //	)
+            bool isInner = false;
+            string lines = "(select st_union(geom) from t_busline_shape where lineguid='"+lineguid+"' and direction=0)::geometry";
+            string region = "(select geom from t_division where gid=" + gid+")::geometry";
+            string st_intersects = " select st_intersects(" + lines + "," + region + ")";
+            using (var con = Connection)
+            {
+                con.Open();
+                using (var cmd = new NpgsqlCommand(st_intersects, con))
+                using (var reader = cmd.ExecuteReader())
+                    while (reader.Read())
+                    {
+                        object t = reader.GetValue(0);
+                        isInner = bool.TryParse(t.ToString(), out isInner);
+                        break;
+                    }
+            }
+            return isInner;
+        }
+        //判断规划线路是否在区域内
+        public bool PlanLineIntersectsRegion(int gid, string planid)
+        {
+            bool isInner = false;
+            string lines = "(select st_union(geom) from t_plan_lineshape where planid='" + planid + "')::geometry";
+            string region = "(select geom from t_division where gid=" + gid+")::geometry";
+            string st_intersects = " select st_intersects(" + lines + "," + region + ")";
+            using (var con = Connection)
+            {
+                con.Open();
+                using (var cmd = new NpgsqlCommand(st_intersects, con))
+                using (var reader = cmd.ExecuteReader())
+                    while (reader.Read())
+                    {
+                        object t = reader.GetValue(0);
+                        isInner = bool.TryParse(t.ToString(), out isInner);
+                        break;
+                    }
+            }
+            return isInner;
+           
+        }
+        //区域内裁剪的排除线路长度
+        public decimal BuelineRegionClipLength(string lineguid,int gid)
+        {
+            decimal len = 0.0m;
+            string lines = "(select st_linemerge(st_union(geom)) from t_busline_shape where lineguid='" + lineguid + "' and direction=0)::geometry";
+            string region = "(select geom from t_division where gid=" + gid+")::geometry";
+            string innergeom = "select st_intersection(" + lines + "," + region + ")";
+            string st_length= "select ST_Length((" + innergeom + ")::geography,false)";
+            using (var con = Connection)
+            {
+                con.Open();
+                using (var cmd = new NpgsqlCommand(st_length, con))
+                using (var reader = cmd.ExecuteReader())
+                    while (reader.Read())
+                    {
+                        object t = reader.GetValue(0);
+                        decimal.TryParse(t.ToString(), out len);
+                    }
+            }
+            return len;
+        }
+        //区域内裁剪的规划线路长度
+        public decimal PlanlineRegionClipLength(string planid,int gid)
+        {
+            decimal len = 0.0m;
+            string lines = "(select st_linemerge(st_union(geom)) from t_plan_lineshape where planid='" + planid + "' )::geometry";
+            string region = "(select geom from t_division where gid=" + gid+")::geometry";
+            string innergeom = "select st_intersection(" + lines + "," + region + ")";
+            string st_length = "select ST_Length((" + innergeom + ")::geography,false)";
+            using (var con = Connection)
+            {
+                con.Open();
+                using (var cmd = new NpgsqlCommand(st_length, con))
+                using (var reader = cmd.ExecuteReader())
+                    while (reader.Read())
+                    {
+                        object t = reader.GetValue(0);
+                        decimal.TryParse(t.ToString(), out len);
+                    }
+            }
+            return len;
+        }
+        //区域内  路网线路和规划线路重叠的部分线段的长度
+        public decimal PlanLineClipAfterOverlapLength(string planid,int gid)
+        {
+            decimal len = 0.0m;
+            //区域截取的规划线段集合
+            string planline = "(select st_linemerge(st_union(geom)) from t_plan_lineshape where planid='" + planid + "')::geometry";
+            string region = "(select geom from t_division where gid=" + gid+ ")::geometry";
+            string planlineInner = "select st_intersection(" + planline + "," + region + ")";
+            string planline_bufferInner = "( SELECT ST_Buffer( ("+ planlineInner +")::geography, 30, 'endcap=flat join=round') )";
+            //区域内线网集合
+            string regiongeom = "(select geom from t_division where gid =" + gid + ")::geometry";
+            string roadlinenet = "(select st_linemerge(st_union(geom)) from t_roadcollection)::geometry";
+            string roadlineInner = "(select  st_intersection(" + roadlinenet + "," + regiongeom + ") )";
+            //规划线段集合和线网线段集合的buffer重叠部分的长度
+            string repeateIntersects= "select  st_intersection(" + roadlineInner + "," + planline_bufferInner + ")";
+            string st_length = "select ST_Length((" + repeateIntersects + ")::geography,false)";
+            using (var con = Connection)
+            {
+                con.Open();
+                using (var cmd = new NpgsqlCommand(st_length, con))
+                using (var reader = cmd.ExecuteReader())
+                    while (reader.Read())
+                    {
+                        object t = reader.GetValue(0);
+                        decimal.TryParse(t.ToString(), out len);
+                    }
+            }
+            return len;
+            
+        }
+        
+        //线网
+        public decimal ST_Plan_RoadNetLength_Region(string lineguid,string planid,int gid)
+        {
+            decimal netlength = 0.0m;
+            var currentnetlen = ST_RoadNetLength_Region(gid);
+            var buslineremovelen = BuelineRegionClipLength(lineguid,gid);
+            var plancliplen = PlanlineRegionClipLength(planid,gid);
+            var overlapplanlen = PlanLineClipAfterOverlapLength(planid,gid);
+            netlength = currentnetlen - buslineremovelen + (plancliplen - overlapplanlen);
+            return netlength;
+        }
+        //线路
+        //Leave to Cain
+        public int ST_PlanBusLineCount_Region(int gid, String planid, String lineguid)
+        {
+            int planBusLineNum = 0;
+            int removeBusLineNum = 0;
+            int total = 0;
+            var busLineCount = ST_BusLineCount_Region(gid);
+            var removeFlag = BusLineIntersectsRegion(gid, lineguid);
+            if (removeFlag)
+            {
+                removeBusLineNum = 1;
+            }
+            else
+            {
+                removeBusLineNum = 0;
+            }
+            var planFlag = PlanLineIntersectsRegion(gid, planid);
+            if (planFlag)
+            {
+                planBusLineNum = 1;
+            }
+            else
+            {
+                planBusLineNum = 0;
+            }
+            total = busLineCount + planBusLineNum - removeBusLineNum;
+            return total;
+        }
+        public decimal BusLineIntersectionRegion(int gid, string lineguid)
+        {
+            //select st_length ((select st_intersection((select st_union(geom) from t_busline_shape where lineguid='EE172CA1-4C44-4AD2-A53F-966F62AD3F03' and direction=0),(select geom from t_division where gid=116))))
+            decimal isInnerLength = 0.0m;
+            string lines = "(select st_union(geom) from t_busline_shape where lineguid='" + lineguid + "' and direction=0)";
+            string region = "(select geom from t_division where gid=" + gid + ")";
+            string st_intersection = "(select st_intersection(" + lines + "," + region + "))";
+            string st_length = "select st_length(" + st_intersection + ")";
+            using (var con = Connection)
+            {
+                con.Open();
+                using (var cmd = new NpgsqlCommand(st_length, con))
+                using (var reader = cmd.ExecuteReader())
+                    while (reader.Read())
+                    {
+                        object t = reader.GetValue(0);
+                        decimal.TryParse(t.ToString(), out isInnerLength);
+                        break;
+                    }
+            }
+            return isInnerLength;
+        }
+        public decimal PlanLineIntersectionRegion(int gid, string planid)
+        {
+            //select st_length ((select st_intersection((select st_union(geom) from t_plan_lineshape where planid='42e5510d-f669-4bec-a78a-697ac66b6561'),(select geom from t_division where gid=116))))
+            decimal isInnerLength = 0.0m;
+            string lines = "(select st_union(geom) from t_plan_lineshape where planid='" + planid + "')";
+            string region = "(select geom from t_division where gid=" + gid + ")";
+            string st_intersection = "(select st_intersection(" + lines + "," + region + "))";
+            string st_length = "select st_length(" + st_intersection + ")";
+            using (var con = Connection)
+            {
+                con.Open();
+                using (var cmd = new NpgsqlCommand(st_length, con))
+                using (var reader = cmd.ExecuteReader())
+                    while (reader.Read())
+                    {
+                        object t = reader.GetValue(0);
+                        decimal.TryParse(t.ToString(), out isInnerLength);
+                        break;
+                    }
+            }
+            return isInnerLength;
+        }
+        public decimal ST_PlanBusLineLength_Region(int gid, String planid, String lineguid)
+        {
+            decimal countLength = 0.0m;
+            decimal nowLength = 0.0m;
+            decimal removeLength = 0.0m;
+            decimal planLength = 0.0m;
+            nowLength = ST_BusLineLength_Region(gid);
+            removeLength = BusLineIntersectionRegion(gid, lineguid);
+            planLength = PlanLineIntersectionRegion(gid, planid);
+            countLength = nowLength + planLength - removeLength;
+            return countLength;
+        }
+        //中途站
+        public int ST_Plan_BusStopCount_Region(string lineguid, string planid, int gid)
+        {
+            //select pid  from t_line_plan_pointlist 
+            //where lineid = '7fbe92e6-5ad0-4353-ba99-3bd4213fe0ba' and ltype = '1'  and ptype = '3'
+            //select* from t_pointinfo
+            //where(type = 0 and(pid not in (4, 5))) or pid in(205)
+            int count = 0;
+            string buslinePids = "select distinct pid  from t_line_plan_pointlist" 
+                  +" where lineid = '"+lineguid+"' and ltype = '0' and ptype = '0' ";
+            string planlinePids = "select pid  from t_line_plan_pointlist"
+                  +" where lineid = '"+planid+"' and ltype = '1'  and ptype = '3' ";
+            string inpids = "";
+            string notinpids = "";
+            using (var con = Connection)
+            {
+                con.Open();
+                IEnumerable<int> pidsNotIn = con.Query<int>(buslinePids);
+                if (pidsNotIn == null || pidsNotIn.Count() == 0)
+                {
+                    notinpids = " 1=1 ";
+                }
+                else
+                {
+                    notinpids = " (pid not in (" + String.Join(",", pidsNotIn.ToList()) + ")) " ;
+                }
+                IEnumerable<int> pidsIn = con.Query<int>(planlinePids);
+                if (pidsIn == null || pidsIn.Count() == 0)
+                {
+                    inpids = " 1=2 ";
+                }
+                else
+                {
+                    inpids = " pid  in (" + String.Join(",", pidsIn.ToList()) + ") ";
+                }
+                //
+                string collectPids = "select pid from t_pointinfo " +" where (type = 0 and "+ notinpids + " ) or "+ inpids;
+                IEnumerable<int> interpids = con.Query<int>(collectPids);
+                if (interpids == null || interpids.Count() == 0)
+                {
+                    /*不直接是0是应为 规划的pid集合 中可能包括了 新增自定义点pid（type=3） 和原始站点（type=0）,d
+                     *现在函数查询的SQL中并没有把规划线路的所有pid取出，而只是获取了增量的pid即 type=3的那些点
+                     */
+                    count = ST_BusStationCount_Region(gid);
+                    return count;
+                }
+                else
+                {
+                    string bustation = "(select * from t_pointinfo where pid in("+String.Join(',',interpids)+")) busstation ";
+                    string regiongeom = " (select * from t_division where gid = " + gid + ")   region";
+                    string intersects = " SELECT busstation.pid AS pid FROM " + bustation + "," + regiongeom
+                    + " WHERE  st_intersects(busstation.geom, region.geom) = 't' ";
+                    string calsql = " select count(*)  from(" + intersects + ") as t";
+                    count = con.Query<int>(calsql).FirstOrDefault<int>();
+                    return count;
+                }
+            }
+        }
+        public int ST_Plan_BusStopTransfer_Count(string lineguid, string planid, int gid)
+        {
+            int count = 0;
+         
+            string buslinePids = "select distinct pid  from t_line_plan_pointlist "
+                  + "where lineid = '" + lineguid + "' and ltype = '0' and ptype = '0' ";
+            string planlinePids = "select pid  from t_line_plan_pointlist "
+                  + "where lineid = '" + planid + "' and ltype = '1'  and ptype = '3' ";
+            string inpids = "";
+            string notinpids = "";
+            using (var con = Connection)
+            {
+                con.Open();
+                IEnumerable<int> pidsNotIn = con.Query<int>(buslinePids);
+                if (pidsNotIn == null || pidsNotIn.Count() == 0)
+                {
+                    notinpids = " 1=1 ";
+                }
+                else
+                {
+                    notinpids = " (pid not in (" + String.Join(",", pidsNotIn) + ")) ";
+                }
+                IEnumerable<int> pidsIn = con.Query<int>(planlinePids);
+                if (pidsIn == null || pidsIn.Count() == 0)
+                {
+                    inpids = " 1=2 ";
+                }
+                else
+                {
+                    inpids = " pid  in (" + String.Join(",", pidsIn) + ") ";
+                }
+                //
+                string collectPids = "select pid from t_pointinfo " + " where(type = 0 and " + notinpids + " ) or " + inpids;
+                IEnumerable<int> interpids = con.Query<int>(collectPids);
+                if (interpids == null || interpids.Count() == 0)
+                {
+                    /*不直接是0是应为 规划的pid集合 中可能包括了 新增自定义点pid（type=3） 和原始站点（type=0）,d
+                   *现在函数查询的SQL中并没有把规划线路的所有pid取出，而只是获取了增量的pid即 type=3的那些点
+                   */
+                    count =  ST_BusStopTransfer_Count(gid);
+                    return count;
+                }
+                else
+                {
+                    string bustation = "(select * from t_pointinfo where pid in(" + String.Join(',', interpids) + ")) busstation ";
+                    string regiongeom = " (select * from t_division where gid = " + gid + ")   region ";
+                    string intersects = " SELECT busstation.pid AS pid FROM " + bustation + "," + regiongeom
+                    + " WHERE  st_intersects(busstation.geom, region.geom) = 't' ";
+                    string calsql = " select pid  from(" + intersects + ") as t";
+                    IEnumerable<int> temppids= con.Query<int>(calsql);
+                    //
+                    if (temppids == null || temppids.Count() == 0)
+                    {
+                        return count;
+                    }
+                    else
+                    {
+                        string pidlist = String.Join(',', temppids.ToList<int>());
+                        string countsql = "select count(*)  FROM t_line_plan_pointlist where pid in (" +pidlist + ") group by pid  having  count(distinct lineid)>1";
+                        count = con.Query<int>(countsql).FirstOrDefault();
+                         
+                    }
+                    return count;
+                }
+            }
+          
+        }
+        public decimal ST_BusStopCover_Region(string planid,int gid,string bufferradius,int radius)
+        {
+            //此处并没有去减去 排除线路站点的缓冲区面积（PM认为不用减），而是增加了规划线路站点缓冲区的面积
+            decimal result = 0.0m;
+            string planpids="select pid  from t_line_plan_pointlist "
+                   + "where lineid = '" + planid + "' and ltype = '1' and ptype = '3' ";
+            if (String.IsNullOrEmpty(bufferradius))
+            {
+                return result;
+            }
+            using (var con = Connection)
+            {
+                con.Open();
+                IEnumerable<int> planpidlist = con.Query<int>(planpids);
+                if (planpidlist == null || planpidlist.Count() == 0)
+                {
+                    result = ST_BusStopCover_Region(gid, bufferradius);
+                    return result;
+                }
+                else
+                {
+                    //规划线路上新增的那些自定义点的缓冲区面geom
+                    string pointbuffer = "(select ST_Buffer( (ST_Union(geom))::geography," + radius+ ",'quad_segs=8') "
+                                    +" from t_pointinfo where pid in (" + String.Join(',',planpidlist)+") )::geometry";
+                    //现状站点缓冲区融合面300 500 600的表
+                    string bufferlayer = "(select geom from " + bufferradius + ") ::geometry";
+                    //把现状和规划的缓冲区合并
+                    string unionarea= " (select st_union( "+pointbuffer+","+bufferlayer+") )::geometry";
+                    //区域图形geom
+                    string regiongeom = "(select geom from t_division where gid = " + gid + ")::geometry";
+                    //区域面和新的缓冲区面Intersection
+                    string intersection = "select  st_intersection(" + regiongeom + "," + unionarea + ")";
+                    string calsql = " select ST_Area((" + intersection + ")::geography,false)";
+                    
+                    using (var cmd = new NpgsqlCommand(calsql, con))
+                    using (var reader = cmd.ExecuteReader())
+                        while (reader.Read())
+                        {
+                            object t = reader.GetValue(0);
+                            decimal.TryParse(t.ToString(), out result);
+                        }
+                }
+            }
+            return result;
+             
+        }
 
         #endregion
 
