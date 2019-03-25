@@ -57,11 +57,11 @@ namespace WebApplication1.Controllers
                 //中途站
                 var stop_count = mySpatialRepo.ST_BusStopCount_Region(gid);
                 var stoptransfer_count =mySpatialRepo.ST_BusStopTransfer_Count(gid);
-                var cover300 = mySpatialRepo.ST_BusStopCover_Region(gid, "");
+                var cover300 = mySpatialRepo.ST_BusStopCover_Region(gid, "buffer300");
                 cover300 = cover300 / net_area;
-                var cover500 = mySpatialRepo.ST_BusStopCover_Region(gid, "");
+                var cover500 = mySpatialRepo.ST_BusStopCover_Region(gid, "buffer500");
                 cover500 = cover500 / net_area;
-                var cover600 = mySpatialRepo.ST_BusStopCover_Region(gid, "");
+                var cover600 = mySpatialRepo.ST_BusStopCover_Region(gid, "buffer600");
                 cover600 = cover600 / net_area;
                 //场站
                 var station_count = mySpatialRepo.ST_BusStationCount_Region(gid);
@@ -125,11 +125,11 @@ namespace WebApplication1.Controllers
                 var stop_count = mySpatialRepo.ST_Plan_BusStopCount_Region(lineguid, planid, gid);
                 var stoptransfer_count = mySpatialRepo.ST_Plan_BusStopTransfer_Count(lineguid, planid, gid);
    
-                var cover300 = mySpatialRepo.ST_BusStopCover_Region(planid,gid, "",300);
+                var cover300 = mySpatialRepo.ST_BusStopCover_Region(planid,gid, "buffer300",300);
                 cover300 = cover300 / net_area;
-                var cover500 = mySpatialRepo.ST_BusStopCover_Region(planid, gid, "", 500);
+                var cover500 = mySpatialRepo.ST_BusStopCover_Region(planid, gid, "buffer500", 500);
                 cover500 = cover500 / net_area;
-                var cover600 = mySpatialRepo.ST_BusStopCover_Region(planid, gid,"", 600);
+                var cover600 = mySpatialRepo.ST_BusStopCover_Region(planid, gid, "buffer600", 600);
                 cover600 = cover600 / net_area;
                 //场站
                 var station_count = mySpatialRepo.ST_BusStationCount_Region(gid);

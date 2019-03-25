@@ -519,8 +519,9 @@ namespace WebApplication1.Repos
             using (var con = Connection)
             {
                 con.Open();
-                var cover= con.Query<float>(calsql).FirstOrDefault();
-                result = decimal.Parse(cover.ToString());
+                double tr= con.Query<double>(calsql).FirstOrDefault();
+                decimal.TryParse(tr.ToString(), out result);
+                
             }
             return result;
         }
@@ -982,6 +983,7 @@ namespace WebApplication1.Repos
                         {
                             object t = reader.GetValue(0);
                             decimal.TryParse(t.ToString(), out result);
+                            break;
                         }
                 }
             }
