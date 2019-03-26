@@ -49,11 +49,11 @@ namespace WebApplication1.Controllers
                 //路网
                 var  net_length = mySpatialRepo.ST_RoadNetLength_Region(gid);
                 var net_area = mySpatialRepo.GetRegionAreaById(gid);
-                var net_density = net_length / net_area;
+                var net_density = (net_length/1000) / (net_area/1000000);
                 //线路
                 var busline_count = mySpatialRepo.ST_BusLineCount_Region(gid);
                 var busline_length = mySpatialRepo.ST_BusLineLength_Region(gid);
-                var busline_density= busline_length / net_area;
+                var busline_density= (busline_length/1000) / (net_area/1000000);
                 //中途站
                 var stop_count = mySpatialRepo.ST_BusStopCount_Region(gid);
                 var stoptransfer_count =mySpatialRepo.ST_BusStopTransfer_Count(gid);
@@ -115,12 +115,12 @@ namespace WebApplication1.Controllers
                  //线网
                 var net_length = mySpatialRepo.ST_Plan_RoadNetLength_Region(lineguid,planid,gid);
                 var net_area = mySpatialRepo.GetRegionAreaById(gid);
-                var net_density = net_length / net_area;
+                var net_density = (net_length / 1000) / (net_area / 1000000); ;
                 //线路
                 var busline_count = mySpatialRepo.ST_PlanBusLineCount_Region(gid, planid, lineguid);
                 var busline_length = mySpatialRepo.ST_PlanBusLineLength_Region(gid, planid, lineguid);
-                var busline_density = busline_length / net_area;
-               
+                var busline_density = (busline_length / 1000) / (net_area / 1000000);
+
                 //中途站
                 var stop_count = mySpatialRepo.ST_Plan_BusStopCount_Region(lineguid, planid, gid);
                 var stoptransfer_count = mySpatialRepo.ST_Plan_BusStopTransfer_Count(lineguid, planid, gid);

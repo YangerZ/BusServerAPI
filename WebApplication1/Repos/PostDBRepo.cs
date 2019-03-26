@@ -198,7 +198,8 @@ namespace WebApplication1.Repos
         {
             using (IDbConnection connection =  new NpgsqlConnection(connectionString))
             {
-                string sql = "SELECT  lineguid,name,isdefault,type,direction,first,last,interval,mileage,time,parentguid,company FROM t_busLine";
+                string sql = "SELECT  lineguid,name,isdefault,type,direction,first,last,interval,mileage,time,parentguid,company FROM t_busLine"+
+                    " where t_busline.lineguid in (select lineguid from t_routelinemap)";
                 var query = connection.Query<BusLine>(sql);
                 return query.ToList();
             }
