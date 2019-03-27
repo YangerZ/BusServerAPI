@@ -765,6 +765,7 @@ namespace WebApplication1.Repos
                             planid = item.planid;
                             StringBuilder coorstr = new StringBuilder();
                             Coordinate[] cc = item.geom.Coordinates;
+                            cc= cc.Distinct().ToArray<Coordinate>();
                             string[] ts = new string[cc.Count()];
                             int i = 0;
                             foreach (Coordinate tempcoor in cc)
@@ -941,7 +942,6 @@ namespace WebApplication1.Repos
                         obj[2] = temp.pid;//Pid
                         obj[3] = current.pid ;
                         listquery.Add(obj);
-                   
                     temp = current;
                    
                 }
