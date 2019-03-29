@@ -189,8 +189,7 @@ namespace WebApplication1.Repos
             return state;
         }
 
-       
-        
+ 
         #endregion
 
         //t_busline
@@ -298,7 +297,25 @@ namespace WebApplication1.Repos
                 return true;
             }
         }
-        
+        public bool AddMulti_T_LineNumber(IEnumerable<t_linenumber> newLineResult,string targetTable)
+        {
+            string insertsql = "INSERT INTO "+ targetTable + "(lineguid,averagelength,buslinecount,bendrate,c_lineguid,coincidence,createtime) " +
+                "VALUES(@lineguid,@averagelength,@buslinecount,@bendrate,@c_lineguid,@coincidence,@createtime)";
+            using (IDbConnection connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+                using (var transactionScope = new TransactionScope())
+                {
+                    //批量注入
+                    int r = SqlMapper.Execute(connection, insertsql, newLineResult, null, null, Text);
+                    //roll back automatically! awesome!
+                    transactionScope.Complete();
+                    return true;
+                }
+
+            }
+        }
+
         //Results t_divisionnumber 区域指标结果 DB操作
         public IEnumerable<t_divisionnumber> GetT_DivisionNumberAll()
         {
@@ -347,7 +364,24 @@ namespace WebApplication1.Repos
                 return true;
             }
         }
-
+        public bool AddMulti_T_DivisionNumber(IEnumerable<t_divisionnumber>  newAreaResult, string targetTable)
+        {
+            string insertsql = "INSERT INTO "+ targetTable + "(gid,linelength,linedensity,roadcover,buslinecount,buslinelength,buslinedensity,stopcount,changecount,cover300,cover500,cover600,stationcount,stationarea,repaircount,createtime) " +
+                "VALUES(@gid,@linelength,@linedensity,@roadcover,@buslinecount,@buslinelength,@buslinedensity,@stopcount,@changecount,@cover300,@cover500,@cover600,@stationcount,@stationarea,@repaircount,@createtime)";
+            using (IDbConnection connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+                using (var transactionScope = new TransactionScope())
+                {
+                    //批量注入
+                    int r = SqlMapper.Execute(connection, insertsql, newAreaResult, null, null, Text);
+                    //roll back automatically! awesome!
+                    transactionScope.Complete();
+                    return true;
+                }
+                
+            }
+        }
         //站点信息表
         //Results t_pointinfo
         public IEnumerable<t_pointinfo> Get_T_PointInfoTable()
@@ -996,6 +1030,53 @@ namespace WebApplication1.Repos
             }
         }
 
+        #endregion
+        #region t_division_busline
+        public bool AddBusLinesWithAreaID(IEnumerable<t_division_busline> divisionbuslines)
+        {
+            string insertsql = "INSERT INTO t_division_busline(gid,lineguid,geom) VALUES(@gid,@lineguid,@geom)";
+            using (IDbConnection connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+
+                using (var transactionScope = new TransactionScope())
+                {
+                    //批量注入
+                    int r = SqlMapper.Execute(connection, insertsql, divisionbuslines, null, null, Text);
+                    //roll back automatically! awesome!
+                    transactionScope.Complete();
+                    return true;
+                }
+
+            }
+           
+        }
+        public IEnumerable<t_division_busline> GetBusLineFromDB(int gid)
+        {
+            IEnumerable<t_division_busline> buslines = null;
+            string sql = "select "+gid+ " as gid,lineguid, ST_Force_2D(geom) as geom from t_busline_shape where lineguid in"
+                + "(select distinct lineguid   from t_routelinemap where rid  in"
+                +"(select  rid from t_roadcollection  where ST_Intersects(geom,"
+                     +"(select geom from t_division where gid= "+gid+")::geometry)) )and direction = 0";
+            using (IDbConnection connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+                buslines = connection.Query<t_division_busline>(sql);
+                
+            }
+            return buslines;
+        }
+        public IEnumerable<t_division> Get_T_Division()
+        {
+            IEnumerable<t_division> division = null;
+            string querysql = "select * from t_division";
+            using (IDbConnection connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+                division = connection.Query<t_division>(querysql);
+            }
+            return division;
+        }
         #endregion
         public void Dispose()
         {

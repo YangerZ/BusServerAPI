@@ -231,7 +231,35 @@ namespace WebApplication1.Controllers
             }
         }
         #endregion
-        
+
+        #region 需要计算的区域和公交线路的预处理
+        [HttpGet]
+        [Route("AreaLine/Create")]
+        public async Task<IActionResult> CreateLineAreaRelationTable()
+        {
+            bool create = false;
+            try
+            {
+
+                IEnumerable<t_division> divisions=myPostRepo.Get_T_Division();
+
+                foreach (var divi in divisions)
+                {
+                    if (divi.gid == 116) continue;//全部区域的就不算了太麻烦了
+                   IEnumerable<t_division_busline> divisionbuslines=  myPostRepo.GetBusLineFromDB(divi.gid);
+                   if (divisionbuslines == null || divisionbuslines.Count() == 0) continue;
+                   bool isadded=myPostRepo.AddBusLinesWithAreaID(divisionbuslines);
+                }
+                return Json(new { success = "200", data = create });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = "404", error = ex.ToString() });
+            }
+        }
+        #endregion
+
+
         #region 车辆线路信息 组织机构信息
         [HttpGet, Route("GetBusLines")]
         public JsonResult GetAllBusLine()
@@ -262,8 +290,6 @@ namespace WebApplication1.Controllers
                 return Json(new { success = "404", error = ex.ToString() });
             }
         }
-
-
         [HttpGet, Route("GetOrganizeInfos")]
         public JsonResult GetOrganizeInfo()
         {
