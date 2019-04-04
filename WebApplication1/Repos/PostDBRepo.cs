@@ -27,8 +27,7 @@ namespace WebApplication1.Repos
 
         }
         //come on postgis i 
-        
-
+ 
         #region demo model
         //Area
         public IEnumerable<Area> GetAreaAllTable()
@@ -188,8 +187,6 @@ namespace WebApplication1.Repos
             }
             return state;
         }
-
- 
         #endregion
 
         //t_busline
@@ -337,9 +334,9 @@ namespace WebApplication1.Repos
                 return query;
             }
         }
-        public bool AddSingle_T_DivisionNumber(t_divisionnumber newAreaResult)
+        public bool AddSingle_T_DivisionNumber(t_divisionnumber newAreaResult, string targetTable)
         {
-            string insertsql = "INSERT INTO t_divisionnumber(gid,linelength,linedensity,roadcover,buslinecount,buslinelength,buslinedensity,stopcount,changecount,cover300,cover500,cover600,stationcount,stationarea,repaircount,createtime) " +
+            string insertsql = "INSERT INTO " + targetTable + "(gid,linelength,linedensity,roadcover,buslinecount,buslinelength,buslinedensity,stopcount,changecount,cover300,cover500,cover600,stationcount,stationarea,repaircount,createtime) " +
                 "VALUES(@gid,@linelength,@linedensity,@roadcover,@buslinecount,@buslinelength,@buslinedensity,@stopcount,@changecount,@cover300,@cover500,@cover600,@stationcount,@stationarea,@repaircount,@createtime)";
             using (IDbConnection connection = new NpgsqlConnection(connectionString))
             {
@@ -351,22 +348,22 @@ namespace WebApplication1.Repos
                 parameters.Add("@buslinecount", newAreaResult.buslinecount);
                 parameters.Add("@buslinelength", newAreaResult.buslinelength);
                 parameters.Add("@buslinedensity", newAreaResult.buslinedensity);
-                parameters.Add("@stopcount", newAreaResult.roadcover);
-                parameters.Add("@changecount", newAreaResult.buslinecount);
-                parameters.Add("@cover300", newAreaResult.buslinelength);
-                parameters.Add("@cover500", newAreaResult.buslinedensity);
-                parameters.Add("@cover600", newAreaResult.buslinelength);
-                parameters.Add("@stationcount", newAreaResult.buslinedensity);
-                parameters.Add("@stationarea", newAreaResult.buslinelength);
-                parameters.Add("@repaircount", newAreaResult.buslinedensity);
+                parameters.Add("@stopcount", newAreaResult.stopcount);
+                parameters.Add("@changecount", newAreaResult.changecount);
+                parameters.Add("@cover300", newAreaResult.cover300);
+                parameters.Add("@cover500", newAreaResult.cover500);
+                parameters.Add("@cover600", newAreaResult.cover600);
+                parameters.Add("@stationcount", newAreaResult.stationcount);
+                parameters.Add("@stationarea", newAreaResult.stationarea);
+                parameters.Add("@repaircount", newAreaResult.repaircount);
                 parameters.Add("@createtime", newAreaResult.createtime);
                 SqlMapper.Execute(connection, insertsql, parameters, null, null, Text);
                 return true;
             }
         }
-        public bool AddMulti_T_DivisionNumber(IEnumerable<t_divisionnumber>  newAreaResult, string targetTable)
+        public bool AddMulti_T_DivisionNumber(IEnumerable<t_divisionnumber> newAreaResult, string targetTable)
         {
-            string insertsql = "INSERT INTO "+ targetTable + "(gid,linelength,linedensity,roadcover,buslinecount,buslinelength,buslinedensity,stopcount,changecount,cover300,cover500,cover600,stationcount,stationarea,repaircount,createtime) " +
+            string insertsql = "INSERT INTO " + targetTable + "(gid,linelength,linedensity,roadcover,buslinecount,buslinelength,buslinedensity,stopcount,changecount,cover300,cover500,cover600,stationcount,stationarea,repaircount,createtime) " +
                 "VALUES(@gid,@linelength,@linedensity,@roadcover,@buslinecount,@buslinelength,@buslinedensity,@stopcount,@changecount,@cover300,@cover500,@cover600,@stationcount,@stationarea,@repaircount,@createtime)";
             using (IDbConnection connection = new NpgsqlConnection(connectionString))
             {
@@ -379,7 +376,7 @@ namespace WebApplication1.Repos
                     transactionScope.Complete();
                     return true;
                 }
-                
+
             }
         }
         //站点信息表
@@ -516,7 +513,6 @@ namespace WebApplication1.Repos
             }
 
         }
-
 
         //Results By View To Export Data
         //线指标导出数据 导出
@@ -924,6 +920,8 @@ namespace WebApplication1.Repos
                 t_planpoint_info t = new t_planpoint_info();
                 t.pid = item.pid;
                 t.planid = planid;
+                t.name = item.name;
+                
                 i++;
                 t.pointnumber = i;
                 newplanpointlist.Add(t);

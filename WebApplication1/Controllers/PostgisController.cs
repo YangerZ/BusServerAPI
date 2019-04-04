@@ -237,7 +237,7 @@ namespace WebApplication1.Controllers
         [Route("AreaLine/Create")]
         public async Task<IActionResult> CreateLineAreaRelationTable()
         {
-            bool create = false;
+            bool isadded = false;
             try
             {
 
@@ -248,9 +248,9 @@ namespace WebApplication1.Controllers
                     if (divi.gid == 116) continue;//全部区域的就不算了太麻烦了
                    IEnumerable<t_division_busline> divisionbuslines=  myPostRepo.GetBusLineFromDB(divi.gid);
                    if (divisionbuslines == null || divisionbuslines.Count() == 0) continue;
-                   bool isadded=myPostRepo.AddBusLinesWithAreaID(divisionbuslines);
+                     isadded=myPostRepo.AddBusLinesWithAreaID(divisionbuslines);
                 }
-                return Json(new { success = "200", data = create });
+                return Json(new { success = "200", data = isadded });
             }
             catch (Exception ex)
             {
@@ -258,7 +258,6 @@ namespace WebApplication1.Controllers
             }
         }
         #endregion
-
 
         #region 车辆线路信息 组织机构信息
         [HttpGet, Route("GetBusLines")]
@@ -551,7 +550,7 @@ namespace WebApplication1.Controllers
                 areatarget.stationarea = float.Parse(param_target["stationarea"].ToString());
                 areatarget.repaircount = int.Parse(param_target["repaircount"].ToString());
                 areatarget.createtime = DateTime.Now;
-                addstatus = myPostRepo.AddSingle_T_DivisionNumber(areatarget);
+                addstatus = myPostRepo.AddSingle_T_DivisionNumber(areatarget, "t_divisionnumber");
 
                 return Json(new { success = "200", data = addstatus });
             }

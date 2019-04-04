@@ -11,6 +11,7 @@ using static System.Data.CommandType;
 using WebApplication1.Models;
 using NetTopologySuite.Geometries;
 using GeoAPI.Geometries;
+using System.Transactions;
 
 namespace WebApplication1.Repos
 {
@@ -34,7 +35,53 @@ namespace WebApplication1.Repos
         {
             Connection.Close();
         }
+        #region 记录指标计算结果
+        public bool AddSingle_T_DivisionNumber(t_divisionnumber newAreaResult, string targetTable)
+        {
+            string insertsql = "INSERT INTO "+ targetTable + "(gid,linelength,linedensity,roadcover,buslinecount,buslinelength,buslinedensity,stopcount,changecount,cover300,cover500,cover600,stationcount,stationarea,repaircount,createtime) " +
+                "VALUES(@gid,@linelength,@linedensity,@roadcover,@buslinecount,@buslinelength,@buslinedensity,@stopcount,@changecount,@cover300,@cover500,@cover600,@stationcount,@stationarea,@repaircount,@createtime)";
+            using (IDbConnection connection = new NpgsqlConnection(connectionString))
+            {
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("@gid", newAreaResult.gid);
+                parameters.Add("@linelength", newAreaResult.linelength);
+                parameters.Add("@linedensity", newAreaResult.linedensity);
+                parameters.Add("@roadcover", newAreaResult.roadcover);
+                parameters.Add("@buslinecount", newAreaResult.buslinecount);
+                parameters.Add("@buslinelength", newAreaResult.buslinelength);
+                parameters.Add("@buslinedensity", newAreaResult.buslinedensity);
+                parameters.Add("@stopcount", newAreaResult.stopcount);
+                parameters.Add("@changecount", newAreaResult.changecount);
+                parameters.Add("@cover300", newAreaResult.cover300);
+                parameters.Add("@cover500", newAreaResult.cover500);
+                parameters.Add("@cover600", newAreaResult.cover600);
+                parameters.Add("@stationcount", newAreaResult.stationcount);
+                parameters.Add("@stationarea", newAreaResult.stationarea);
+                parameters.Add("@repaircount", newAreaResult.repaircount);
+                parameters.Add("@createtime", newAreaResult.createtime);
+                SqlMapper.Execute(connection, insertsql, parameters, null, null, Text);
+                return true;
+            }
+        }
+        public bool AddMulti_T_DivisionNumber(IEnumerable<t_divisionnumber> newAreaResult, string targetTable)
+        {
+            string insertsql = "INSERT INTO " + targetTable + "(gid,linelength,linedensity,roadcover,buslinecount,buslinelength,buslinedensity,stopcount,changecount,cover300,cover500,cover600,stationcount,stationarea,repaircount,createtime) " +
+                "VALUES(@gid,@linelength,@linedensity,@roadcover,@buslinecount,@buslinelength,@buslinedensity,@stopcount,@changecount,@cover300,@cover500,@cover600,@stationcount,@stationarea,@repaircount,@createtime)";
+            using (IDbConnection connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+                using (var transactionScope = new TransactionScope())
+                {
+                    //批量注入
+                    int r = SqlMapper.Execute(connection, insertsql, newAreaResult, null, null, Text);
+                    //roll back automatically! awesome!
+                    transactionScope.Complete();
+                    return true;
+                }
 
+            }
+        }
+        #endregion
         #region 单线指标计算
         //计算线段及其间距
         public IEnumerable<t_busline_shape> GetStationsBreakLength(string lineguid, int direct)
@@ -420,22 +467,20 @@ namespace WebApplication1.Repos
         public decimal ST_BusLineLength_Region(int gid)
         {
             decimal total = 0.0m;
-            //   select ST_Length(
-            //   (
-            //       select st_intersection(
-            //           (select geom from t_division where gid = 116)::geometry,
-            //           (select ST_Union(geom) from t_busline_shape where direction = 0) ::geometry
-            //       )
-            //    )::geography,false
-            //)
-           
-            string regiongeom = "(select geom from t_division where gid = "+gid+")::geometry";
-            string linegeoms = "(select ST_Union(geom) from t_busline_shape where direction = 0) ::geometry";
-            string intersection = "select  st_intersection(" + regiongeom + "," + linegeoms + ")";
-            string calsql = "select ST_Length(("+ intersection + ")::geography,false)";
+            //select Sum(ST_Length(geom::geography,false)) from t_busline_shape
+
+            //    where direction = 0 and st_intersects(
+            //              (select t_division.geom from t_division where gid = 116)::geometry,
+            //             t_busline_shape.geom
+            //           )
+            string regiongeom = "(select geom from t_division where gid = "+gid+")::geometry ";
+          
+            string intersection = " st_intersects( t_busline_shape.geom," + regiongeom + ") ";
+            string calsql = "select Sum(ST_Length(geom::geography,false) ) from t_busline_shape where direction=0 and "+intersection;
             using (var con = Connection)
             {
                 con.Open();
+                
                 using (var cmd = new NpgsqlCommand(calsql, con))
                 using (var reader = cmd.ExecuteReader())
                     while (reader.Read())
@@ -499,8 +544,10 @@ namespace WebApplication1.Repos
                 }
                 else {
                     string pidlist = String.Join(',', pids.ToList<int>());
-                    string countsql = "select count(*)  FROM  t_linepoint where pid in (" + pidlist + ") group by pid  having  count(distinct lineguid)>1";
-                    count = con.Query<int>(countsql).FirstOrDefault(); 
+                    string countsql = "select pid  FROM  t_linepoint where pid in (" + pidlist + ") group by pid  having  count(distinct lineguid)>1";
+                    IEnumerable<int> cn = con.Query<int>(countsql);
+                    if (cn == null || cn.Count() == 0) count = 0;
+                    else count = cn.Count(); 
                 }
             }
             return count;
@@ -556,7 +603,7 @@ namespace WebApplication1.Repos
             string regiongeom = "(select * from t_division where gid =" + gid + ") region";
             string intersects = "SELECT * FROM t_bus_station_polygon station, " + regiongeom +
                     " WHERE  st_intersects(region.geom, station.geom) = 't'";
-            string calsql = "select sum(t.jzmj) from (" + intersects + ") as t";
+            string calsql = "select sum(t.tdmj) from (" + intersects + ") as t";
             using (var con = Connection)
             {
                 con.Open();
@@ -573,7 +620,7 @@ namespace WebApplication1.Repos
         }
         public int ST_BusStationRepairCount_Region(int gid)
         {
-            //select round(sum(t.jzmj),2) from(SELECT * FROM t_bus_station_polygon station, (select * from t_division where gid = 116) region WHERE  st_intersects(region.geom, station.geom) = 't') as t
+            //select round(sum(t.tdmj),2) from(SELECT * FROM t_bus_station_polygon station, (select * from t_division where gid = 116) region WHERE  st_intersects(region.geom, station.geom) = 't') as t
             //select count(*) from(SELECT * FROM t_bus_station_polygon station, (select * from t_division where gid = 116) region WHERE  st_intersects(region.geom, station.geom) = 't') as t where gn like '%修车%'
             int total = 0;
             string regiongeom = "(select * from t_division where gid =" + gid + ") region";
@@ -934,9 +981,11 @@ namespace WebApplication1.Repos
                     else
                     {
                         string pidlist = String.Join(',', temppids.ToList<int>());
-                        string countsql = "select count(*)  FROM t_line_plan_pointlist where pid in (" +pidlist + ") group by pid  having  count(distinct lineid)>1";
-                        count = con.Query<int>(countsql).FirstOrDefault();
-                         
+                        string countsql = "select pid  FROM t_line_plan_pointlist where pid in (" +pidlist + ") group by pid  having  count(distinct lineid)>1";
+                        IEnumerable<int> cn = con.Query<int>(countsql);
+                        if (cn == null || cn.Count() == 0) count = 0;
+                        else count = cn.Count();
+
                     }
                     return count;
                 }
@@ -992,5 +1041,16 @@ namespace WebApplication1.Repos
         }
         #endregion
 
+        public IEnumerable<t_division> Get_T_Division()
+        {
+            IEnumerable<t_division> division = null;
+            string querysql = "select * from t_division";
+            using (IDbConnection connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+                division = connection.Query<t_division>(querysql);
+            }
+            return division;
+        }
     }
 }
