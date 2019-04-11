@@ -434,7 +434,7 @@ namespace WebApplication1.Repos
         }
         public bool AddSingle_T_PointInfo(t_pointinfo newpointinfo)
         {
-            string insertsql = "INSERT INTO t_pointinfo(gid,objectid,pid,name,type,__gid,id1,id2) VALUES(@gid,@objectid,@pid,@name,@type,@__gid,@id1,@id2)";
+            string insertsql = "INSERT INTO t_pointinfo(gid,pid,name,type) VALUES(@gid,@pid,@name,@type)";
             using (NpgsqlConnection conn = new NpgsqlConnection(connectionString))
             {
                 conn.Open();
@@ -449,13 +449,13 @@ namespace WebApplication1.Repos
                     {
                         //ST_Transform(ST_PointFromText('POINT(13076394.48160 4697320.0884)', 3857),4326);
                         cmd.Parameters.AddWithValue("@gid", gid);
-                        cmd.Parameters.AddWithValue("@objectid", newpointinfo.objectid);
+                        //cmd.Parameters.AddWithValue("@objectid", newpointinfo.objectid);
                         cmd.Parameters.AddWithValue("@pid", pid);
                         cmd.Parameters.AddWithValue("@name", newpointinfo.name);
                         cmd.Parameters.AddWithValue("@type", newpointinfo.type);
-                        cmd.Parameters.AddWithValue("@__gid", newpointinfo.__gid);
-                        cmd.Parameters.AddWithValue("@id1", newpointinfo.id1);
-                        cmd.Parameters.AddWithValue("@id2", newpointinfo.id2);
+                        //cmd.Parameters.AddWithValue("@__gid", newpointinfo.__gid);
+                        //cmd.Parameters.AddWithValue("@id1", newpointinfo.id1);
+                        //cmd.Parameters.AddWithValue("@id2", newpointinfo.id2);
                         cmd.ExecuteNonQuery();
 
                     }
@@ -481,8 +481,11 @@ namespace WebApplication1.Repos
         }
         public bool Update_T_PointInfo(t_pointinfo newpointinfo)
         {
+            //string updatesql = "Update t_pointinfo set " +
+            //    "gid=@gid,objectid=@objectid,pid=@pid,name=@name,type=@type,__gid=@__gid,id1=@id1,id2=@id2"
+            //    + "  where pid=@pid,";
             string updatesql = "Update t_pointinfo set " +
-                "gid=@gid,objectid=@objectid,pid=@pid,name=@name,type=@type,__gid=@__gid,id1=@id1,id2=@id2"
+                "gid=@gid,pid=@pid,name=@name,type=@type"
                 + "  where pid=@pid,";
             using (NpgsqlConnection conn = new NpgsqlConnection(connectionString))
             {
@@ -492,13 +495,13 @@ namespace WebApplication1.Repos
                     using (var cmd = new NpgsqlCommand(updatesql, conn))
                     {
                         cmd.Parameters.AddWithValue("@gid", newpointinfo.gid);
-                        cmd.Parameters.AddWithValue("@objectid", newpointinfo.objectid);
+                        //cmd.Parameters.AddWithValue("@objectid", newpointinfo.objectid);
                         cmd.Parameters.AddWithValue("@pid", newpointinfo.pid);
                         cmd.Parameters.AddWithValue("@name", newpointinfo.name);
                         cmd.Parameters.AddWithValue("@type", newpointinfo.type);
-                        cmd.Parameters.AddWithValue("@__gid", newpointinfo.__gid);
-                        cmd.Parameters.AddWithValue("@id1", newpointinfo.id1);
-                        cmd.Parameters.AddWithValue("@id2", newpointinfo.id2);
+                        //cmd.Parameters.AddWithValue("@__gid", newpointinfo.__gid);
+                        //cmd.Parameters.AddWithValue("@id1", newpointinfo.id1);
+                        //cmd.Parameters.AddWithValue("@id2", newpointinfo.id2);
                         cmd.ExecuteNonQuery();
                     }
                     using (var cmd = new NpgsqlCommand("", conn))
@@ -1032,7 +1035,7 @@ namespace WebApplication1.Repos
         #region t_division_busline
         public bool AddBusLinesWithAreaID(IEnumerable<t_division_busline> divisionbuslines)
         {
-            string insertsql = "INSERT INTO t_division_busline(gid,lineguid,geom) VALUES(@gid,@lineguid,@geom)";
+            string insertsql = "INSERT INTO t_division_busline(gid,lineguid,rid) VALUES(@gid,@lineguid,@rid)";
             using (IDbConnection connection = new NpgsqlConnection(connectionString))
             {
                 connection.Open();
@@ -1049,13 +1052,28 @@ namespace WebApplication1.Repos
             }
            
         }
+        public bool Delete_T_Division_BusLine()
+        {
+            string querysql = " Delete  from  t_division_busline";
+            using (NpgsqlConnection conn = new NpgsqlConnection(connectionString))
+            {
+                conn.Open();
+                conn.Execute(querysql);
+                return true;
+            }
+        }
         public IEnumerable<t_division_busline> GetBusLineFromDB(int gid)
         {
             IEnumerable<t_division_busline> buslines = null;
-            string sql = "select "+gid+ " as gid,lineguid, ST_Force_2D(geom) as geom from t_busline_shape where lineguid in"
-                + "(select distinct lineguid   from t_routelinemap where rid  in"
-                +"(select  rid from t_roadcollection  where ST_Intersects(geom,"
-                     +"(select geom from t_division where gid= "+gid+")::geometry)) )and direction = 0";
+            //string sql = "select "+gid+ " as gid,lineguid,ST_Force_2D(ST_Multi(geom)) as geom from t_busline_shape where lineguid in"
+            //    + "(select distinct lineguid   from t_routelinemap where rid  in"
+            //    +"(select  rid from t_roadcollection  where ST_Intersects(geom,"
+            //         +"(select geom from t_division where gid= "+gid+")::geometry)) )and direction = 0";
+
+            string sql = "  select " + gid + " as gid,lineguid,rid from t_routelinemap where lineguid in" +
+                           "(select distinct lineguid   from t_routelinemap where rid  in" +
+                           "(select  rid from t_roadcollection  where ST_Intersects(geom," +
+                           "(select geom from t_division where gid = " + gid + ")::geometry))) and direction = 0";
             using (IDbConnection connection = new NpgsqlConnection(connectionString))
             {
                 connection.Open();

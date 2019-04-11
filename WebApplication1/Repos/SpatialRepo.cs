@@ -81,6 +81,16 @@ namespace WebApplication1.Repos
 
             }
         }
+        public bool Delete_T_Division_BusLine(string targetTable)
+        {
+            string querysql = " Delete  from  "+ targetTable;
+            using (NpgsqlConnection conn = new NpgsqlConnection(connectionString))
+            {
+                conn.Open();
+                conn.Execute(querysql);
+                return true;
+            }
+        }
         #endregion
         #region 单线指标计算
         //计算线段及其间距
