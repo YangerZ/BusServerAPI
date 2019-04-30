@@ -15,6 +15,8 @@ namespace WebApplication1.Models
         public string c_lineguid { get; set; }
         public float coincidence { get; set; }
         public DateTime createtime { get; set; }
-       
+        public float totallength { get; set; }
+        public int stationcount { get; set; }
+
     }
 }

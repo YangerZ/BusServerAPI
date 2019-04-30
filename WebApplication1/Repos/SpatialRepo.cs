@@ -91,6 +91,46 @@ namespace WebApplication1.Repos
                 return true;
             }
         }
+        public bool AddSingle_T_LineNumber(t_linenumber newLineResult)
+        {
+            string insertsql = "INSERT INTO t_linenumber(lineguid,averagelength,buslinecount,bendrate,c_lineguid,coincidence,createtime,totallength,stationcount) " +
+                "VALUES(@lineguid,@averagelength,@buslinecount,@bendrate,@c_lineguid,@coincidence,@createtime,@totallength,@stationcount)";
+            using (IDbConnection connection = new NpgsqlConnection(connectionString))
+            {
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("@lineguid", newLineResult.lineguid);
+                parameters.Add("@averagelength", newLineResult.averagelength);
+                parameters.Add("@buslinecount", newLineResult.buslinecount);
+                parameters.Add("@bendrate", newLineResult.bendrate);
+                parameters.Add("@c_lineguid", newLineResult.c_lineguid);
+                parameters.Add("@coincidence", newLineResult.coincidence);
+                parameters.Add("@createtime", newLineResult.createtime);
+                parameters.Add("@totallength", newLineResult.totallength);
+                parameters.Add("@stationcount", newLineResult.stationcount);
+                SqlMapper.Execute(connection, insertsql, parameters, null, null, Text);
+                return true;
+            }
+        }
+        public bool AddMulti_T_LineNumber(IEnumerable<t_linenumber> newLineResult, string targetTable)
+        {
+            string insertsql = "INSERT INTO t_linenumber(lineguid,averagelength,buslinecount,bendrate,c_lineguid,coincidence,createtime,totallength,stationcount) " +
+               "VALUES(@lineguid,@averagelength,@buslinecount,@bendrate,@c_lineguid,@coincidence,@createtime,@totallength,@stationcount)";
+            using (IDbConnection connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+                using (var transactionScope = new TransactionScope())
+                {
+                    //批量注入
+                    int r = SqlMapper.Execute(connection, insertsql, newLineResult, null, null, Text);
+                    //roll back automatically! awesome!
+                    transactionScope.Complete();
+                    return true;
+                }
+
+            }
+        }
+
+
         #endregion
         #region 单线指标计算
         //计算线段及其间距
@@ -173,6 +213,11 @@ namespace WebApplication1.Repos
                 +"select C.rid from ("
                 +"SELECT A.id,A.rid FROM t_routelinemap as A INNER JOIN t_routelinemap as B ON A.rid = B.rid"
                 + "  where A.lineguid = '" + lineguid_1 + "' and A.direction = " + direct1 + " and B.lineguid = '" + lineguid_2 + "' and B.direction = " + direct2+" ) as C)";
+            if (String.IsNullOrEmpty(lineguid_2))
+            {
+                //20190423 Mr Biao said add 0
+                return res;
+            }
             using (var con = Connection)
             {
                 con.Open();
@@ -191,6 +236,25 @@ namespace WebApplication1.Repos
             }
             return res;
 
+        }
+
+        public List<t_busline_shape> GetAll_T_BusLine_Shape()
+        {
+            using (IDbConnection connection = new NpgsqlConnection(connectionString))
+            {
+                string sql = "SELECT distinct lineguid from t_busline_shape";
+                var query = connection.Query<t_busline_shape>(sql);
+                return query.ToList();
+            }
+        }
+        public int Query_StationNums(string lineguid,int direction)
+        {
+            using (IDbConnection connection = new NpgsqlConnection(connectionString))
+            {
+                string sql = "Select count(*) from t_linepoint where lineguid='" + lineguid+"' and direction="+direction;
+                int query = connection.Query<int>(sql).FirstOrDefault();
+                return query;
+            }
         }
         #endregion
 
@@ -265,7 +329,6 @@ namespace WebApplication1.Repos
         public decimal FindNearestRoad(int pid)
         {
             decimal distance = 0.0m;
-
             string sql_guids = "select distinct lineguid from t_busline_shape where startpid="+pid;
             string sql_lines = "select * from t_busline_shape where lineguid in"
                     + " (select distinct lineguid from t_busline_shape where startpid="+pid+") ";//
@@ -281,21 +344,27 @@ namespace WebApplication1.Repos
             foreach (var item in lineguids)
             {
                 //正向查找路口
+                var ordernumber1 = from t in lines
+                                  where t.lineguid == item.ToString() && t.direction == 0 && t.startpid == pid
+                                  select t.ordernumber;
                 var grplines1 = from t in lines
-                               where t.lineguid == item.ToString() && t.startpid >= pid
-                               orderby t.ordernumber ascending
+                               where t.lineguid == item.ToString() &&t.direction==0&& t.ordernumber >= ordernumber1.ElementAt(0)
+                                orderby t.ordernumber ascending
                                select t;
-                var dd1 = findLinesToCross(grplines1);
+                var dd1 = findLinesToCross(grplines1,"asc");
                 if (dd1!= -1.0m)
                 {
                     res.Add(dd1);
                 }
                 //反向查找路口
+                var ordernumber2 = from t in lines
+                                  where t.lineguid == item.ToString() && t.direction ==0&& t.endpid == pid 
+                                   select t.ordernumber;
                 var grplines2 = from t in lines
-                               where t.lineguid == item.ToString() && t.startpid<= pid
-                               orderby t.ordernumber descending
+                               where t.lineguid == item.ToString() && t.direction == 0 && t.ordernumber<=ordernumber2.ElementAt(0)
+                                orderby t.ordernumber descending
                                select t;
-                var dd2 = findLinesToCross(grplines2);
+                var dd2 = findLinesToCross(grplines2,"desc");
                 if (dd2 != -1.0m)
                 {
                     res.Add(dd2);
@@ -306,25 +375,47 @@ namespace WebApplication1.Repos
             distance = res.Min();
             return distance;
         }
-        public decimal findLinesToCross(IOrderedEnumerable<t_busline_shape> grplines)
+        public decimal findLinesToCross(IOrderedEnumerable<t_busline_shape> grplines,string order)
         {
             decimal t = 0.0m;
             List<t_busline_shape> lines = new List<t_busline_shape>();
-            foreach (var item in grplines)
+            if (order == "asc")
             {
-                lines.Add(item);
-                //路口节点
-                if (item.etype == 2)
+                foreach (var item in grplines)
                 {
-                    t = lines.Sum<t_busline_shape>(x => x.length);
-                    break;
-                }// 
-                if (item.etype == 1)
-                {
-                    t = -1.0m;
-                    break;
+                    lines.Add(item);
+                    //路口节点
+                    if (item.etype == 2)
+                    {
+                        t = lines.Sum<t_busline_shape>(x => x.length);
+                        break;
+                    }// 
+                    if (item.etype == 1)
+                    {
+                        t = -1.0m;
+                        break;
+                    }
                 }
             }
+            if (order == "desc")
+            {
+                foreach (var item in grplines)
+                {
+                    lines.Add(item);
+                    //路口节点
+                    if (item.stype == 2)
+                    {
+                        t = lines.Sum<t_busline_shape>(x => x.length);
+                        break;
+                    }// 
+                    if (item.stype == 1)
+                    {
+                        t = -1.0m;
+                        break;
+                    }
+                }
+            }
+            
             return t;
         }
         #endregion
@@ -380,6 +471,11 @@ namespace WebApplication1.Repos
             string sql2= " (select ST_UNION(geom) from t_busline_shape  where lineguid='" + lineguid + "' and direction="+direct+ ")::geography";
             string Intersection = "(SELECT ST_Intersection(" +buffer+","+sql2+"))::geography";
             string length = "select ST_Length(" + Intersection + " ,false)";
+            if (String.IsNullOrEmpty(lineguid))
+            {
+                //20190423 Mr Biao Said add 0 to return
+                return res;
+            }
             using (var con = Connection)
             {
                 con.Open();
@@ -918,7 +1014,7 @@ namespace WebApplication1.Repos
                     /*不直接是0是应为 规划的pid集合 中可能包括了 新增自定义点pid（type=3） 和原始站点（type=0）,d
                      *现在函数查询的SQL中并没有把规划线路的所有pid取出，而只是获取了增量的pid即 type=3的那些点
                      */
-                    count = ST_BusStationCount_Region(gid);
+                    count = ST_BusStopCount_Region(gid);//ST_BusStationCount_Region(gid);
                     return count;
                 }
                 else

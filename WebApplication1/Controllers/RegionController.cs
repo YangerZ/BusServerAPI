@@ -88,7 +88,7 @@ namespace WebApplication1.Controllers
                 areatarget.stationarea = float.Parse(station_area.ToString());
                 areatarget.repaircount = int.Parse(station_repair_count.ToString());
                 areatarget.createtime = DateTime.Now;
-                mySpatialRepo.AddSingle_T_DivisionNumber(areatarget,"t_divisionnumber_cmp");
+                //mySpatialRepo.AddSingle_T_DivisionNumber(areatarget,"t_divisionnumber_cmp");
                 return Json(new
                 {
                     success = "200",
@@ -193,20 +193,21 @@ namespace WebApplication1.Controllers
         {
             try
             {
-                
+                DateTime dt = DateTime.Now;
                 IEnumerable<t_division> divisoins= mySpatialRepo.Get_T_Division();
+                //mySpatialRepo.Delete_T_Division_BusLine("t_divisionnumber");只追加不删除
                 foreach (var item in divisoins)
                 {
                     int gid = item.gid;
                     //返回值
-                    if (gid == 116 || gid == 117 || gid == 118)
-                    {
+                    //if (gid == 116 || gid == 117 || gid == 118)
+                    //{
 
-                    }
-                    else
-                    {
-                        continue;
-                    }
+                    //}
+                    //else
+                    //{
+                    //    continue;
+                    //}
                     //路网
                     var net_length = mySpatialRepo.ST_RoadNetLength_Region(gid) / 1000;
                     var net_area = mySpatialRepo.GetRegionAreaById(gid) / 1000000;
@@ -246,8 +247,8 @@ namespace WebApplication1.Controllers
                     areatarget.stationcount = int.Parse(station_count.ToString());
                     areatarget.stationarea = float.Parse(station_area.ToString());
                     areatarget.repaircount = int.Parse(station_repair_count.ToString());
-                    areatarget.createtime = DateTime.Now;
-                    mySpatialRepo.AddSingle_T_DivisionNumber(areatarget, "t_divisionnumber_cmp");
+                    areatarget.createtime = dt;
+                    mySpatialRepo.AddSingle_T_DivisionNumber(areatarget, "t_divisionnumber");
                 }
 
                 return Json(new

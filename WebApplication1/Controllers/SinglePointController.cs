@@ -55,7 +55,7 @@ namespace WebApplication1.Controllers
                 //计算换成线路上的站点数
                 var sumpoints = mySpatialRepo.SumRelatedPoints(pid, lines);
                 //30米缓冲区查询后的个站点和线路数
-                var bufferlines = mySpatialRepo.SumCrossingLinesByBuffer(pid, 30.0);
+                var bufferlines = mySpatialRepo.SumCrossingLinesByBuffer(pid, 300.0);
                 var bufferpoints = mySpatialRepo.SumRelatedPoints(pid,bufferlines);
                 //计算最邻近的路口
                 var nearestpoint =mySpatialRepo.FindNearestRoad(pid);

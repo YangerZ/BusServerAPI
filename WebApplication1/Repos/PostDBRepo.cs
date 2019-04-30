@@ -1093,6 +1093,38 @@ namespace WebApplication1.Repos
             }
             return division;
         }
+        public IEnumerable<tempdivision> Get_T_Temp()
+        {
+            IEnumerable<tempdivision> division = null;
+            string querysql = "select * from temp";
+            using (IDbConnection connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+                division = connection.Query<tempdivision>(querysql);
+            }
+            return division;
+        }
+        public IEnumerable<t_division_busline> GetBusLineFromDBTemp(int gid)
+        {
+            IEnumerable<t_division_busline> buslines = null;
+            //string sql = "select "+gid+ " as gid,lineguid,ST_Force_2D(ST_Multi(geom)) as geom from t_busline_shape where lineguid in"
+            //    + "(select distinct lineguid   from t_routelinemap where rid  in"
+            //    +"(select  rid from t_roadcollection  where ST_Intersects(geom,"
+            //         +"(select geom from t_division where gid= "+gid+")::geometry)) )and direction = 0";
+
+            string sql = "  select " + gid + " as gid,lineguid,rid from t_routelinemap where lineguid in" +
+                           "(select distinct lineguid   from t_routelinemap where rid  in" +
+                           "(select  rid from t_roadcollection  where ST_Intersects(geom," +
+                           "(select geom from temp where gid = " + gid + ")::geometry))) and direction = 0";
+           
+            using (IDbConnection connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+                buslines = connection.Query<t_division_busline>(sql);
+
+            }
+            return buslines;
+        }
         #endregion
         public void Dispose()
         {

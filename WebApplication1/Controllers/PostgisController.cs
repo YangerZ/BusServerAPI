@@ -240,12 +240,12 @@ namespace WebApplication1.Controllers
             bool isadded = false;
             try
             {
-
+                myPostRepo.Delete_T_Division_BusLine();
                 IEnumerable<t_division> divisions=myPostRepo.Get_T_Division();
 
                 foreach (var divi in divisions)
                 {
-                    if (divi.gid == 116) continue;//全部区域的就不算了太麻烦了
+                  // if (divi.gid != 116) continue;//全部区域的就不算了太麻烦了可是国标那边也很麻烦 算了 我来吧
                    IEnumerable<t_division_busline> divisionbuslines=  myPostRepo.GetBusLineFromDB(divi.gid);
                    if (divisionbuslines == null || divisionbuslines.Count() == 0) continue;
                      isadded=myPostRepo.AddBusLinesWithAreaID(divisionbuslines);
@@ -257,6 +257,36 @@ namespace WebApplication1.Controllers
                 return Json(new { success = "404", error = ex.ToString() });
             }
         }
+        [HttpGet]
+        [Route("AreaLine/Create/Temp")]
+        public async Task<IActionResult> CreateLineAreaRelationTableTemp()
+        {
+//            select temp.gid,temp.xzqmc,temp.街镇,t2.name,t2.lineguid from temp left join
+
+//(select t1.gid as gid, busline.name as name, t1.lineguid as lineguid from(select gid, lineguid from t_division_busline group by gid, lineguid) t1
+//left join busline on t1.lineguid = busline.lineguid) t2
+//on temp.gid = t2.gid
+            bool isadded = false;
+            try
+            {
+                myPostRepo.Delete_T_Division_BusLine();
+                IEnumerable<tempdivision> divisions = myPostRepo.Get_T_Temp();
+
+                foreach (var divi in divisions)
+                {
+                    // if (divi.gid != 116) continue;//全部区域的就不算了太麻烦了可是国标那边也很麻烦 算了 我来吧
+                    IEnumerable<t_division_busline> divisionbuslines = myPostRepo.GetBusLineFromDBTemp(divi.gid);
+                    if (divisionbuslines == null || divisionbuslines.Count() == 0) continue;
+                    isadded = myPostRepo.AddBusLinesWithAreaID(divisionbuslines);
+                }
+                return Json(new { success = "200", data = isadded });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = "404", error = ex.ToString() });
+            }
+        }
+
         #endregion
 
         #region 车辆线路信息 组织机构信息

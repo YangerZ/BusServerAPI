@@ -25,6 +25,7 @@ namespace WebApplication1.Models
         //public int  id { get; set; }
         public int gid { get; set; }
         public string lineguid { get; set; }
-        public MultiLineString geom { get; set; }
+        public int rid { get; set; }
+        //public MultiLineString geom { get; set; }
     }
 }
