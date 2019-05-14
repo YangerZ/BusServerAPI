@@ -189,6 +189,155 @@ namespace WebApplication1.Repos
         }
         #endregion
 
+        #region  用户信息CRUD 
+        //userinfo
+        public IEnumerable<t_userinfo> GetUserAllTable()
+        {
+            StringBuilder tsb = new StringBuilder();
+            try
+            {
+                using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+                {
+                    connection.Open();
+                    IEnumerable<t_userinfo> query = connection.Query<t_userinfo>("select * from userinfo");
+                    return query;
+                }
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+
+        }
+        public t_userinfo GetSingle_T_UserInfo(string  userid)
+        {
+            string querysql = " Select * from userinfo where userid='" + userid+"'";
+
+            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            {
+
+                var query = connection.Query<t_userinfo>(querysql).SingleOrDefault();
+                return query;
+            }
+        }
+        public t_userinfo GetSingle_T_UserLogin(string username,string password)
+        {
+            string querysql = " Select * from userinfo where username='" + username + "' and password='"+password+"'";
+            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            {
+                var query = connection.Query<t_userinfo>(querysql).SingleOrDefault();
+                return query;
+            }
+        }
+        public bool AddSingle_T_UserInfo(t_userinfo user)
+        {
+            string insertsql = "INSERT INTO userinfo(username,password,duty,userid,role,realname,other) VALUES(@username,@password,@duty,@userid,@role,@realname,@other,@guestid,@func)";
+            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("@username", user.username);
+                parameters.Add("@password", user.password);
+                parameters.Add("@duty", user.duty);
+                parameters.Add("@userid", user.userid);
+                parameters.Add("@role", user.role);
+                parameters.Add("@realname", user.realname);
+                parameters.Add("@other", user.other);
+                parameters.Add("@guestid", user.guestid);
+                parameters.Add("@func", user.func);
+                SqlMapper.Execute(connection, insertsql, parameters, null, null, Text);
+                return true;
+            }
+        }
+        public bool Delete_T_UserInfo(string userid)
+        {
+            string querysql = " Delete  from userinfo where userid='" + userid+"'";
+
+            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+                connection.Execute(querysql);
+                return true;
+            }
+        }
+        public bool Update_T_UserInfo(t_userinfo userinfo)
+        {
+            string updatesql = "UPDATE userinfo SET  username=@username,password=@password,duty=@duty,role=@role,realname=@realname,other=@other,guestid=@guestid,func=@func" +
+                " WHERE userid =@userid";
+            bool state = false;
+            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            {
+                connection.Open();
+                DynamicParameters parameters = new DynamicParameters();
+                parameters.Add("@userid", userinfo.userid);
+                parameters.Add("@username", userinfo.username);
+                parameters.Add("@password", userinfo.password);
+                parameters.Add("@duty", userinfo.duty);
+                parameters.Add("@role", userinfo.role);
+                parameters.Add("@realname", userinfo.realname);
+                parameters.Add("@other", userinfo.other);
+                parameters.Add("@guestid", userinfo.guestid);
+                parameters.Add("@func", userinfo.func);
+                SqlMapper.Execute(connection, updatesql, parameters, null, null, Text);
+                state = true;
+            }
+            return state;
+        }
+        public bool CheckUserNameEnable(string username)
+        {
+            string querysql = "select * from userinfo where username='" + username + "'";
+
+            using (NpgsqlConnection connection = new NpgsqlConnection(connectionString))
+            {
+                var query = connection.Query<t_userinfo>(querysql).SingleOrDefault();
+                if (query == null)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
+        #endregion
+
+        #region 角色功能关系
+        public List<func> GetAll_T_FuncInfo(string rolename)
+        {
+            using (IDbConnection connection = new NpgsqlConnection(connectionString))
+            {
+
+                string rootsql = "select * from func where role like '%"+rolename+"%' and pid='-1'";
+                var rootnode = connection.Query<func>(rootsql);
+                foreach (var item in rootnode)
+                {
+                    GetFuncInfosChildrens(item,rolename);
+                }
+                return rootnode.ToList();
+            }
+        }
+        //查找所有子节点的任务
+        private void GetFuncInfosChildrens(func p_func,string rolename)
+        {
+            IEnumerable<func> childs = null;
+            var p_id = p_func.num.ToString();
+
+            string sql = "SELECT * FROM func  Where pid='" + p_id + "' and role like '%"+ rolename + "%' order by num ";
+            using (IDbConnection connection = new NpgsqlConnection(connectionString))
+            {
+                childs = connection.Query<func>(sql);
+                p_func.children = childs;
+            }
+            if (childs == null || childs.Count() == 0)
+            {
+                return;
+            }
+            return;
+
+        }
+        #endregion
+
         //t_busline
         public List<BusLine> GetAll_T_BusLine()
         {

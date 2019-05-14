@@ -70,15 +70,16 @@ namespace WebApplication1.Controllers
                     }
                     //站点间线段总个数
                     decimal total = lines.Sum(d => d.length);
+                    //站点数
+                    int stationcount = mySpatialRepo.Query_StationNums(lineguid, direct);
                     //平均站间距
-                    decimal average = total / lines.Count();
+                    decimal average = total / (stationcount-1);
                     //1次换乘到达的线路数
                     var crossnums = mySpatialRepo.GetLineNumbersByOnce(lineguid, direct);
                     //非直线系数   空间直线距离/线段路线长度
                     decimal distance = mySpatialRepo.GetDistanceFromPoints(lines.First().startpid, lines.Last().endpid);
                     decimal coefficient = distance / total;
-                    //站点数
-                    int stationcount = mySpatialRepo.Query_StationNums(lineguid,direct);
+                   
                     //线段重合率
                     //decimal repeatlength = mySpatialRepo.IntersectionBetweenTwoLines(lineguid, direct, lineguid2, direct2);
                     //decimal repeatRatio = repeatlength / total;
@@ -138,8 +139,9 @@ namespace WebApplication1.Controllers
                 }
                 //站点间线段总个数
                 decimal total = lines.Sum(d => d.length);
+                int stationcount = mySpatialRepo.Query_StationNums(lineguid, direct);
                 //平均站间距
-                decimal average = total / lines.Count();
+                decimal average = total / (stationcount-1);
                 //1次换乘到达的线路数
                 var crossnums = mySpatialRepo.GetLineNumbersByOnce(lineguid, direct);
                 //非直线系数   空间直线距离/线段路线长度
@@ -184,7 +186,7 @@ namespace WebApplication1.Controllers
                   new { lineinfos= lines, pjzjj = 0, khcxls = 0, fzxxs = 0, xdchl = 0 }
                     });
                 }
-                //站点间线段总个数
+                //站点间线段总个数  注意这个地方 应为线路中没有道路路口打断线段的干扰  所以每个线段就是间距
                 decimal total =decimal.Parse(lines.Sum(d => d.length).ToString());
                 //平均站间距
                 decimal average = total / lines.Count();

@@ -232,6 +232,133 @@ namespace WebApplication1.Controllers
         }
         #endregion
 
+        #region 用户 角色 功能信息CRUD
+        [HttpGet, Route("AllUsers")]
+        public JsonResult GetAllUserInfos()
+        {
+            try
+            {
+                var temp = myPostRepo.GetUserAllTable();
+                return Json(new { success = "200", data = temp });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = "404", error = ex.ToString() });
+            }
+
+        }
+        //Get bus/spatial/guid
+        [HttpGet("userinfo/{userid}")]
+        public JsonResult GetSigleDataByUserID(string userid)
+        {
+            t_userinfo temp = null;
+            try
+            {
+                temp = myPostRepo.GetSingle_T_UserInfo(userid);
+                return Json(new { success = "200", data = temp });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = "404", error = ex.ToString() });
+            }
+        }
+
+        [HttpPost("userinfo/Login")]
+        public JsonResult GetSigleDataByUserID([FromBody] JObject param_user)
+        {
+            t_userinfo temp = null;
+            try
+            {
+               string password = param_user["password"].ToString();
+               string username = param_user["username"].ToString();
+                temp = myPostRepo.GetSingle_T_UserLogin(username,password);
+                return Json(new { success = "200", data = temp });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = "404", error = ex.ToString() });
+            }
+        }
+        //Post bus/spatial/area body formdata
+        //[HttpPost]
+        [HttpPost("userinfo/Add")]
+        public JsonResult AddUserInfo([FromBody] JObject param_user)//[FromBody] Area area)
+        {
+            bool addstatus = false;
+            try
+            {
+                t_userinfo userinfo = new t_userinfo();
+                userinfo.userid = Guid.NewGuid().ToString();
+                userinfo.username = param_user["username"].ToString();
+                userinfo.password = param_user["password"].ToString();
+                userinfo.duty = param_user["duty"].ToString();
+                userinfo.role = param_user["role"].ToString();
+                userinfo.realname = param_user["realname"].ToString();
+                userinfo.other = param_user["other"].ToString();
+                userinfo.guestid = param_user["guestid"].ToString();
+                userinfo.func = param_user["func"].ToString();
+                //检查用户名是否可用
+                bool check = myPostRepo.CheckUserNameEnable(userinfo.username);
+                if (check)
+                {
+                    addstatus = myPostRepo.AddSingle_T_UserInfo(userinfo);
+                }
+                else {
+                    return Json(new { success = "404", data = "repeat"});
+                }
+                //
+                
+                return Json(new { success = "200", data = addstatus });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = "404", error = ex.ToString() });
+            }
+        }
+        //[HttpPut("{userid}")]
+        [HttpPost("userinfo/set")]
+        public JsonResult UpdateUserInfo([FromBody] JObject param_user)
+        {
+            bool updatestatus = false;
+            try
+            {
+                t_userinfo userinfo = new t_userinfo();
+                userinfo.userid = param_user["userid"].ToString();
+                userinfo.username = param_user["username"].ToString();
+                userinfo.password = param_user["password"].ToString();
+                userinfo.duty = param_user["duty"].ToString();
+                userinfo.role = param_user["role"].ToString();
+                userinfo.realname = param_user["realname"].ToString();
+                userinfo.other = param_user["other"].ToString();
+                userinfo.guestid = param_user["guestid"].ToString();
+                userinfo.func = param_user["func"].ToString();
+                updatestatus = myPostRepo.Update_T_UserInfo(userinfo);
+                return Json(new { success = "200", data = updatestatus });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = "404", error = ex.ToString() });
+            }
+        }
+
+
+        [HttpGet("funcinfo/{rolename}")]
+        public JsonResult GetFuncsByRoleName(string rolename)
+        {
+            List<func> temp = null;
+            try
+            {
+                temp = myPostRepo.GetAll_T_FuncInfo(rolename);
+                return Json(new { success = "200", data = temp });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = "404", error = ex.ToString() });
+            }
+        }
+        //Login Confirm?
+        #endregion
+
         #region 需要计算的区域和公交线路的预处理
         [HttpGet]
         [Route("AreaLine/Create")]

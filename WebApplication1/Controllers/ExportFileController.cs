@@ -109,8 +109,8 @@ namespace WebApplication1.Controllers
                     foreach (var item in exportlines)
                     {
                         t_linenumber_exportview_filter temp = new t_linenumber_exportview_filter();
-                        temp.averagelength = (item.averagelength * 100).ToString("N", nfi);
-                        temp.bendrate = (item.bendrate * 100).ToString("N", nfi);
+                        temp.averagelength = (item.averagelength).ToString("N", nfi);
+                        temp.bendrate = (item.bendrate * 100).ToString("N", nfi).Substring(0,2);
                         temp.buslinecount = item.buslinecount;
                         temp.stationcount = item.stationcount;
                         temp.totallength = item.totallength.ToString("N", nfi);
