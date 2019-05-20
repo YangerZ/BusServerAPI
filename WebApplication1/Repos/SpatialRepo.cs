@@ -278,6 +278,10 @@ namespace WebApplication1.Repos
         {
             IEnumerable<string> points = null;
             List<string> temp = new List<string>();
+            if (lines == null ||lines.Count()==0)
+            {
+                return points;
+            }
             string sql = "select distinct pid from t_linepoint where lineguid in (";
             lines.ToList().ForEach(x => temp.Add("'" + x.ToString() + "' "));
             string cond = String.Join(",", temp.ToList());
@@ -347,29 +351,67 @@ namespace WebApplication1.Repos
                 var ordernumber1 = from t in lines
                                   where t.lineguid == item.ToString() && t.direction == 0 && t.startpid == pid
                                   select t.ordernumber;
-                var grplines1 = from t in lines
-                               where t.lineguid == item.ToString() &&t.direction==0&& t.ordernumber >= ordernumber1.ElementAt(0)
-                                orderby t.ordernumber ascending
-                               select t;
-                var dd1 = findLinesToCross(grplines1,"asc");
-                if (dd1!= -1.0m)
+                if (ordernumber1 != null && ordernumber1.Count() > 0)
                 {
-                    res.Add(dd1);
+                    var grplines1 = from t in lines
+                                    where t.lineguid == item.ToString() && t.direction == 0 && t.ordernumber >= ordernumber1.ElementAt(0)
+                                    orderby t.ordernumber ascending
+                                    select t;
+                    var dd1 = findLinesToCross(grplines1, "asc");
+                    if (dd1 != -1.0m)
+                    {
+                        res.Add(dd1);
+                    }
                 }
+
+                var ordernumber1_1 = from t in lines
+                                   where t.lineguid == item.ToString() && t.direction ==1 && t.startpid == pid
+                                   select t.ordernumber;
+                if (ordernumber1_1 != null && ordernumber1_1.Count() > 0)
+                {
+                    var grplines1_1 = from t in lines
+                                    where t.lineguid == item.ToString() && t.direction == 1 && t.ordernumber >= ordernumber1_1.ElementAt(0)
+                                    orderby t.ordernumber ascending
+                                    select t;
+                    var dd1 = findLinesToCross(grplines1_1, "asc");
+                    if (dd1 != -1.0m)
+                    {
+                        res.Add(dd1);
+                    }
+                }
+
                 //反向查找路口
                 var ordernumber2 = from t in lines
                                   where t.lineguid == item.ToString() && t.direction ==0&& t.endpid == pid 
                                    select t.ordernumber;
-                var grplines2 = from t in lines
-                               where t.lineguid == item.ToString() && t.direction == 0 && t.ordernumber<=ordernumber2.ElementAt(0)
-                                orderby t.ordernumber descending
-                               select t;
-                var dd2 = findLinesToCross(grplines2,"desc");
-                if (dd2 != -1.0m)
+                if (ordernumber2 != null && ordernumber2.Count() > 0)
                 {
-                    res.Add(dd2);
+                    var grplines2 = from t in lines
+                                    where t.lineguid == item.ToString() && t.direction == 0 && t.ordernumber <= ordernumber2.ElementAt(0)
+                                    orderby t.ordernumber descending
+                                    select t;
+                    var dd2 = findLinesToCross(grplines2, "desc");
+                    if (dd2 != -1.0m)
+                    {
+                        res.Add(dd2);
+                    }
                 }
-                
+
+                var ordernumber2_1= from t in lines
+                                   where t.lineguid == item.ToString() && t.direction == 1 && t.endpid == pid
+                                   select t.ordernumber;
+                if (ordernumber2_1 != null && ordernumber2_1.Count() > 0)
+                {
+                    var grplines2_1 = from t in lines
+                                    where t.lineguid == item.ToString() && t.direction == 1 && t.ordernumber <= ordernumber2_1.ElementAt(0)
+                                    orderby t.ordernumber descending
+                                    select t;
+                    var dd2 = findLinesToCross(grplines2_1, "desc");
+                    if (dd2 != -1.0m)
+                    {
+                        res.Add(dd2);
+                    }
+                }
             }
             //按公交线路进行分组
             distance = res.Min();
@@ -379,6 +421,10 @@ namespace WebApplication1.Repos
         {
             decimal t = 0.0m;
             List<t_busline_shape> lines = new List<t_busline_shape>();
+            if(grplines==null||grplines.Count()==0)
+            {
+                return t;
+            }
             if (order == "asc")
             {
                 foreach (var item in grplines)
@@ -684,7 +730,7 @@ namespace WebApplication1.Repos
             //select st_intersects(select st_union(geom) from t_busline_shape where lineguid='EE172CA1-4C44-4AD2-A53F-966F62AD3F03' and direction=0,select distinct geom from t_division where gid=116)
             int total = 0;
             string regiongeom = "(select * from t_division where gid =" + gid + ") region";
-            string intersects = "SELECT * FROM t_bus_station_polygon station, " + regiongeom +
+            string intersects = "select * from (SELECT * FROM t_bus_station_view where stationtype='场站') station, " + regiongeom +
                     " WHERE  st_intersects(region.geom, station.geom) = 't'";
             string calsql = "select count(*)  from (" + intersects + ") as t";
             using (var con = Connection)
@@ -707,7 +753,7 @@ namespace WebApplication1.Repos
             //            select count(*) from(SELECT * FROM t_bus_station_polygon station, (select * from t_division where gid = 116) region WHERE  st_intersects(region.geom, station.geom) = 't') as t
             decimal area = 0.0m;
             string regiongeom = "(select * from t_division where gid =" + gid + ") region";
-            string intersects = "SELECT * FROM t_bus_station_polygon station, " + regiongeom +
+            string intersects = " select * from  (SELECT * FROM t_bus_station_view where stationtype='场站') station, " + regiongeom +
                     " WHERE  st_intersects(region.geom, station.geom) = 't'";
             string calsql = "select sum(t.tdmj) from (" + intersects + ") as t";
             using (var con = Connection)
@@ -730,9 +776,9 @@ namespace WebApplication1.Repos
             //select count(*) from(SELECT * FROM t_bus_station_polygon station, (select * from t_division where gid = 116) region WHERE  st_intersects(region.geom, station.geom) = 't') as t where gn like '%修车%'
             int total = 0;
             string regiongeom = "(select * from t_division where gid =" + gid + ") region";
-            string intersects = "SELECT * FROM t_bus_station_polygon station, " + regiongeom +
+            string intersects = " select * from (SELECT * FROM t_bus_station_view where stationtype='场站') station, " + regiongeom +
                     " WHERE  st_intersects(region.geom, station.geom) = 't'";
-            string calsql = "select count(*)  from (" + intersects + ") as t where gn like '%修车%'";
+            string calsql = "select count(*)  from (" + intersects + ") as t where gn like '%修%'";
             using (var con = Connection)
             {
                 con.Open();
@@ -747,10 +793,80 @@ namespace WebApplication1.Repos
             }
             return total;
         }
+
+        //替换掉原有场站数据 变成view的数据表之前的备份
+        //public int ST_BusStationCount_Region(int gid)
+        //{
+        //    //select st_intersects(select st_union(geom) from t_busline_shape where lineguid='EE172CA1-4C44-4AD2-A53F-966F62AD3F03' and direction=0,select distinct geom from t_division where gid=116)
+        //    int total = 0;
+        //    string regiongeom = "(select * from t_division where gid =" + gid + ") region";
+        //    string intersects = "SELECT * FROM t_bus_station_polygon station, " + regiongeom +
+        //            " WHERE  st_intersects(region.geom, station.geom) = 't'";
+        //    string calsql = "select count(*)  from (" + intersects + ") as t";
+        //    using (var con = Connection)
+        //    {
+        //        con.Open();
+        //        using (var cmd = new NpgsqlCommand(calsql, con))
+        //        using (var reader = cmd.ExecuteReader())
+        //            while (reader.Read())
+        //            {
+        //                object t = reader.GetValue(0);
+        //                int.TryParse(t.ToString(), out total);
+        //                break;
+        //            }
+        //    }
+        //    return total;
+        //}
+        //public decimal ST_BusStationArea_Region(int gid)
+        //{
+        //    //
+        //    //            select count(*) from(SELECT * FROM t_bus_station_polygon station, (select * from t_division where gid = 116) region WHERE  st_intersects(region.geom, station.geom) = 't') as t
+        //    decimal area = 0.0m;
+        //    string regiongeom = "(select * from t_division where gid =" + gid + ") region";
+        //    string intersects = "SELECT * FROM t_bus_station_polygon station, " + regiongeom +
+        //            " WHERE  st_intersects(region.geom, station.geom) = 't'";
+        //    string calsql = "select sum(t.tdmj) from (" + intersects + ") as t";
+        //    using (var con = Connection)
+        //    {
+        //        con.Open();
+        //        using (var cmd = new NpgsqlCommand(calsql, con))
+        //        using (var reader = cmd.ExecuteReader())
+        //            while (reader.Read())
+        //            {
+        //                object t = reader.GetValue(0);
+        //                decimal.TryParse(t.ToString(), out area);
+        //                break;
+        //            }
+        //    }
+        //    return area;
+        //}
+        //public int ST_BusStationRepairCount_Region(int gid)
+        //{
+        //    //select round(sum(t.tdmj),2) from(SELECT * FROM t_bus_station_polygon station, (select * from t_division where gid = 116) region WHERE  st_intersects(region.geom, station.geom) = 't') as t
+        //    //select count(*) from(SELECT * FROM t_bus_station_polygon station, (select * from t_division where gid = 116) region WHERE  st_intersects(region.geom, station.geom) = 't') as t where gn like '%修车%'
+        //    int total = 0;
+        //    string regiongeom = "(select * from t_division where gid =" + gid + ") region";
+        //    string intersects = "SELECT * FROM t_bus_station_polygon station, " + regiongeom +
+        //            " WHERE  st_intersects(region.geom, station.geom) = 't'";
+        //    string calsql = "select count(*)  from (" + intersects + ") as t where gn like '%修车%'";
+        //    using (var con = Connection)
+        //    {
+        //        con.Open();
+        //        using (var cmd = new NpgsqlCommand(calsql, con))
+        //        using (var reader = cmd.ExecuteReader())
+        //            while (reader.Read())
+        //            {
+        //                object t = reader.GetValue(0);
+        //                int.TryParse(t.ToString(), out total);
+        //                break;
+        //            }
+        //    }
+        //    return total;
+        //}
         #endregion
 
         #region 规划总体指标计算
-        
+
         /*
          some functions ready for calculate Area Length Intersection Buffer
              */

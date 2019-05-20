@@ -56,7 +56,17 @@ namespace WebApplication1.Controllers
                 var sumpoints = mySpatialRepo.SumRelatedPoints(pid, lines);
                 //30米缓冲区查询后的个站点和线路数
                 var bufferlines = mySpatialRepo.SumCrossingLinesByBuffer(pid, 300.0);
+                int bufferlinecount = 0;
+                if (bufferlines != null)
+                {
+                    bufferlinecount = bufferlines.Count();
+                }
+                int bufferpointcount = 0;
                 var bufferpoints = mySpatialRepo.SumRelatedPoints(pid,bufferlines);
+                if (bufferpoints != null)
+                {
+                    bufferlinecount = bufferpoints.Count();
+                }
                 //计算最邻近的路口
                 var nearestpoint =mySpatialRepo.FindNearestRoad(pid);
                 //back 
@@ -66,8 +76,8 @@ namespace WebApplication1.Controllers
                     data =
                     new { hcxl=sumlines,
                         hczd =sumpoints.Count(),
-                        hcxl_30 =bufferlines.Count(),
-                        hczd_30 =bufferpoints.Count(),
+                        hcxl_30 = bufferlinecount,
+                        hczd_30 = bufferpointcount,
                         zjlk =nearestpoint}
                 });
             }

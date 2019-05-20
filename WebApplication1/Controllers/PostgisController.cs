@@ -346,10 +346,39 @@ namespace WebApplication1.Controllers
         public JsonResult GetFuncsByRoleName(string rolename)
         {
             List<func> temp = null;
+            List<object> ts = new List<object>();
             try
             {
                 temp = myPostRepo.GetAll_T_FuncInfo(rolename);
-                return Json(new { success = "200", data = temp });
+                foreach(func t in temp)
+                {
+
+                    if (t.children == null||t.children.Count()==0)
+                    {
+                        pfunc pc = new pfunc();
+                        pc.url = t.url;
+                        pc.name = t.name;
+                        pc.icon = t.icon;
+                        pc.num = t.num;
+                        pc.pid = t.pid;
+                        object t2 = pc as Object;
+                        ts.Add(t2);
+                       
+                    }
+                    else
+                    {
+                        //pfunc pt = new pfunc();
+                        //pt.url = t.url;
+                        //pt.name = t.name;
+                        //pt.icon = t.icon;
+                        //pt.num = t.num;
+
+                        object t1 = t as Object;
+                        ts.Add(t1);
+                    }
+                    
+                }
+                return Json(new { success = "200", data =ts });
             }
             catch (Exception ex)
             {

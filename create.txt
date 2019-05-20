@@ -1,0 +1,23 @@
+CREATE TABLE "public"."userinfo" (
+	"id" serial NOT NULL DEFAULT nextval('userinfo_id_seq'::regclass), 
+	"username" varchar, 
+	"password" varchar, 
+	"duty" varchar, 
+	"userid" varchar, 
+	"role" varchar, 
+	"other" varchar, 
+	"realname" varchar, 
+	"guestid" varchar, 
+	"func" varchar
+)
+GO
+CREATE TABLE "public"."func" (
+	"id" serial NOT NULL DEFAULT nextval('func_id_seq'::regclass) PRIMARY KEY, 
+	"num" varchar, 
+	"icon" varchar, 
+	"name" varchar, 
+	"url" varchar, 
+	"role" varchar, 
+	"pid" varchar
+)
+GO

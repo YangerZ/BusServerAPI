@@ -1,0 +1,8 @@
+﻿INSERT INTO "userinfo" ("username","password","duty","userid","role","other","realname","guestid","func") VALUES ('huangtao','123456','总经理','e568fe6b-25c7-46e1-8c58-01dfc5346289','admin',NULL,'黄涛',NULL,NULL);
+INSERT INTO "userinfo" ("username","password","duty","userid","role","other","realname","guestid","func") VALUES ('dengqing','123456','总调度长','dd1cf2a1-c0fd-4c38-9e08-8b2c965e7134','admin',NULL,'邓晴',NULL,NULL);
+INSERT INTO "userinfo" ("username","password","duty","userid","role","other","realname","guestid","func") VALUES ('chuqingyang','123456','运调部经理','a2fa1658-73f9-4064-8e7d-1c9bc37377ed','admin',NULL,'褚青阳',NULL,NULL);
+INSERT INTO "userinfo" ("username","password","duty","userid","role","other","realname","guestid","func") VALUES ('sunwei','123456','企业发展部','7441b033-6e5c-436c-8957-795aa22b063d','admin',NULL,'孙伟',NULL,NULL);
+INSERT INTO "userinfo" ("username","password","duty","userid","role","other","realname","guestid","func") VALUES ('zhangkun','123456','运调部','308341f0-de42-474d-a4ea-ca2738566942','admin',NULL,'张昆',NULL,NULL);
+INSERT INTO "userinfo" ("username","password","duty","userid","role","other","realname","guestid","func") VALUES ('douweisong','123456','企业发展部','7a341eb6-8718-4e7b-972c-19b6c3157294','admin',NULL,'窦伟松',NULL,NULL);
+INSERT INTO "userinfo" ("username","password","duty","userid","role","other","realname","guestid","func") VALUES ('展示账户1','123456','无',NULL,'user',NULL,'无','guest01',NULL);
+INSERT INTO "userinfo" ("username","password","duty","userid","role","other","realname","guestid","func") VALUES ('展示账户2','123456','无',NULL,'user',NULL,'无','guest02',NULL);
