@@ -65,7 +65,7 @@ namespace WebApplication1.Controllers
                 var bufferpoints = mySpatialRepo.SumRelatedPoints(pid,bufferlines);
                 if (bufferpoints != null)
                 {
-                    bufferlinecount = bufferpoints.Count();
+                    bufferpointcount = bufferpoints.Count();
                 }
                 //计算最邻近的路口
                 var nearestpoint =mySpatialRepo.FindNearestRoad(pid);

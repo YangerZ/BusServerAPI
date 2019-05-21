@@ -302,7 +302,7 @@ namespace WebApplication1.Repos
             IEnumerable<string> lines = null;
             //boolean ST_DWithin(geography gg1, geography gg2, double precision distance_meters);
             string sql = "SELECT distinct t_linepoint.lineguid FROM t_linepoint "
-                       + " WHERE ST_DWithin(t_linepoint.geom::geography, (select distinct geom from t_linepoint where pid = " + pid + " and direction = 0)::geography," + radius + ")";
+                       + " WHERE ST_DWithin(t_linepoint.geom::geography, (select distinct geom from t_linepoint where pid = " + pid + " and (direction = 0 or direction=1) )::geography," + radius + ")";
             using (var con = Connection)
             {
 
