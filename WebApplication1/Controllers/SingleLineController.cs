@@ -65,6 +65,14 @@ namespace WebApplication1.Controllers
                         linetarget1.createtime = dt;
                         linetarget1.totallength =0;
                         linetarget1.stationcount =0;
+
+                        linetarget1.department = 0;
+                        linetarget1.school = 0;
+                        linetarget1.hospital = 0;
+                        linetarget1.community = 0;
+                        linetarget1.commerce = 0;
+                        linetarget1.scenicspot = 0;
+
                         mySpatialRepo.AddSingle_T_LineNumber(linetarget1);
                         continue;
                     }
@@ -78,8 +86,16 @@ namespace WebApplication1.Controllers
                     var crossnums = mySpatialRepo.GetLineNumbersByOnce(lineguid, direct);
                     //非直线系数   空间直线距离/线段路线长度
                     decimal distance = mySpatialRepo.GetDistanceFromPoints(lines.First().startpid, lines.Last().endpid);
-                    decimal coefficient = distance / total;
-                   
+
+                    decimal coefficient = 0m;
+                    if (distance != 0m)
+                    {
+                        coefficient = total / distance;
+                    }
+                    
+
+
+                    IEnumerable<facilitygrp> fac_grps = mySpatialRepo.GetFacilityCountByLineBuffer(lineguid,500);
                     //线段重合率
                     //decimal repeatlength = mySpatialRepo.IntersectionBetweenTwoLines(lineguid, direct, lineguid2, direct2);
                     //decimal repeatRatio = repeatlength / total;
@@ -94,6 +110,44 @@ namespace WebApplication1.Controllers
                     linetarget.createtime = dt;
                     linetarget.totallength = float.Parse(total.ToString());
                     linetarget.stationcount = stationcount;
+                    //缓冲区计算设施个数
+                    linetarget.department = 0;
+                    linetarget.school = 0;
+                    linetarget.hospital = 0;
+                    linetarget.community = 0;
+                    linetarget.commerce = 0;
+                    linetarget.scenicspot = 0;
+                    if (fac_grps!=null&&fac_grps.Count()>0)
+                    {
+                        foreach (var fac in fac_grps)
+                        {
+                            if (fac.type == 0)
+                            {
+                                linetarget.department = fac.count;
+                            }
+                            if (fac.type == 1)
+                            {
+                                linetarget.school = fac.count;
+                            }
+                            if (fac.type == 2)
+                            {
+                                linetarget.hospital = fac.count;
+                            }
+                            if (fac.type == 3)
+                            {
+                                linetarget.community = fac.count;
+                            }
+                            if (fac.type == 4)
+                            {
+                                linetarget.commerce = fac.count;
+                            }
+                            if (fac.type == 5)
+                            {
+                                linetarget.scenicspot = fac.count;
+                            }
+
+                        }
+                    }
                     mySpatialRepo.AddSingle_T_LineNumber(linetarget);
                 }
 
@@ -146,7 +200,7 @@ namespace WebApplication1.Controllers
                 var crossnums = mySpatialRepo.GetLineNumbersByOnce(lineguid, direct);
                 //非直线系数   空间直线距离/线段路线长度
                 decimal distance = mySpatialRepo.GetDistanceFromPoints(lines.First().startpid, lines.Last().endpid);
-                decimal coefficient = distance / total;
+                decimal coefficient = total/distance;
                 //线段重合率
                 decimal repeatlength = mySpatialRepo.IntersectionBetweenTwoLines(lineguid, direct, lineguid2, direct2);
                 decimal repeatRatio = repeatlength / total;
@@ -194,7 +248,7 @@ namespace WebApplication1.Controllers
                 var crossnums = mySpatialRepo.GetPlanLineNumbersByOnce(lines);
                 //非直线系数   空间直线距离/线段路线长度
                 decimal distance = mySpatialRepo.GetDistanceFromPoints(lines.First().startpid, lines.Last().endpid);
-                decimal coefficient = distance / total;
+                decimal coefficient = total/distance;
                 //线段重合率
                 decimal repeatlength = mySpatialRepo.IntersectionBetweenTwoLines(planid,lineguid,direct);
                 decimal repeatRatio = repeatlength / total;

@@ -24,4 +24,9 @@ namespace WebApplication1.ParamsObj
         public double length { get; set; }
          public Geometry geom { get; set; }
     }
+    public class facilitygrp
+    {
+        public int type;
+        public int count;
+    }
 }

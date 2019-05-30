@@ -54,16 +54,22 @@ namespace WebApplication1.Controllers
                 }
                 //计算换成线路上的站点数
                 var sumpoints = mySpatialRepo.SumRelatedPoints(pid, lines);
-                //30米缓冲区查询后的个站点和线路数
-                var bufferlines = mySpatialRepo.SumCrossingLinesByBuffer(pid, 300.0);
+                //30米缓冲区查询后的个站点和线路数 变更
+                //var bufferlines = mySpatialRepo.SumCrossingLinesByBuffer(pid, 300.0);
                 int bufferlinecount = 0;
-                if (bufferlines != null)
-                {
-                    bufferlinecount = bufferlines.Count();
-                }
+                //if (bufferlines != null)
+                //{
+                //    bufferlinecount = bufferlines.Count();
+                //}
                 int bufferpointcount = 0;
-                var bufferpoints = mySpatialRepo.SumRelatedPoints(pid,bufferlines);
-                if (bufferpoints != null)
+                //var bufferpoints = mySpatialRepo.SumRelatedPoints(pid,bufferlines);
+                //if (bufferpoints != null)
+                //{
+                //    bufferpointcount = bufferpoints.Count();
+                //}
+
+                var bufferpoints=mySpatialRepo.SumPointsByBuffer(pid, 500.0);
+                if(bufferpoints!=null)
                 {
                     bufferpointcount = bufferpoints.Count();
                 }

@@ -12,6 +12,7 @@ using WebApplication1.Models;
 using NetTopologySuite.Geometries;
 using GeoAPI.Geometries;
 using System.Transactions;
+using WebApplication1.ParamsObj;
 
 namespace WebApplication1.Repos
 {
@@ -93,8 +94,8 @@ namespace WebApplication1.Repos
         }
         public bool AddSingle_T_LineNumber(t_linenumber newLineResult)
         {
-            string insertsql = "INSERT INTO t_linenumber(lineguid,averagelength,buslinecount,bendrate,c_lineguid,coincidence,createtime,totallength,stationcount) " +
-                "VALUES(@lineguid,@averagelength,@buslinecount,@bendrate,@c_lineguid,@coincidence,@createtime,@totallength,@stationcount)";
+            string insertsql = "INSERT INTO t_linenumber(lineguid,averagelength,buslinecount,bendrate,c_lineguid,coincidence,createtime,totallength,stationcount,department,school,hospital,community,commerce,scenicspot) " +
+                "VALUES(@lineguid,@averagelength,@buslinecount,@bendrate,@c_lineguid,@coincidence,@createtime,@totallength,@stationcount,@department,@school,@hospital,@community,@commerce,@scenicspot)";
             using (IDbConnection connection = new NpgsqlConnection(connectionString))
             {
                 DynamicParameters parameters = new DynamicParameters();
@@ -107,14 +108,22 @@ namespace WebApplication1.Repos
                 parameters.Add("@createtime", newLineResult.createtime);
                 parameters.Add("@totallength", newLineResult.totallength);
                 parameters.Add("@stationcount", newLineResult.stationcount);
+
+                parameters.Add("@department", newLineResult.department);
+                parameters.Add("@school", newLineResult.school);
+                parameters.Add("@hospital", newLineResult.hospital);
+                parameters.Add("@community", newLineResult.community);
+                parameters.Add("@commerce", newLineResult.commerce);
+                parameters.Add("@scenicspot", newLineResult.scenicspot);
+
                 SqlMapper.Execute(connection, insertsql, parameters, null, null, Text);
                 return true;
             }
         }
         public bool AddMulti_T_LineNumber(IEnumerable<t_linenumber> newLineResult, string targetTable)
         {
-            string insertsql = "INSERT INTO t_linenumber(lineguid,averagelength,buslinecount,bendrate,c_lineguid,coincidence,createtime,totallength,stationcount) " +
-               "VALUES(@lineguid,@averagelength,@buslinecount,@bendrate,@c_lineguid,@coincidence,@createtime,@totallength,@stationcount)";
+            string insertsql = "INSERT INTO t_linenumber(lineguid,averagelength,buslinecount,bendrate,c_lineguid,coincidence,createtime,totallength,stationcount,department,school,hospital,community,commerce,scenicspot) " +
+               "VALUES(@lineguid,@averagelength,@buslinecount,@bendrate,@c_lineguid,@coincidence,@createtime,@totallength,@stationcount,@department,@school,@hospital,@community,@commerce,@scenicspot)";
             using (IDbConnection connection = new NpgsqlConnection(connectionString))
             {
                 connection.Open();
@@ -256,6 +265,26 @@ namespace WebApplication1.Repos
                 return query;
             }
         }
+
+        //查询周边缓冲区的设施
+        public IEnumerable<facilitygrp> GetFacilityCountByLineBuffer(string lineguid,double radius)
+        {
+            //根据线路查站点
+            IEnumerable<facilitygrp> facs = null;
+            string sqlpoints = "select st_union(geom) from t_linepoint where lineguid='" + lineguid + "' and direction=0";
+            //根据站点缓冲区面
+            //department 0  school 1 hospital 2 community 3 commerce 4 scenicspot 5 
+            string sql = "select type, count(*)  FROM t_facility "
+                     + " WHERE ST_DWithin(("+sqlpoints+ " )::geography,t_facility.geom::geography, " + radius + ") group by type";
+            using (var con = Connection)
+            {
+                con.Open();
+                facs = con.Query<facilitygrp>(sql);
+            }
+            //统计设施类型和个数
+
+            return facs;
+        }
         #endregion
 
         #region 单点计算指标
@@ -295,7 +324,23 @@ namespace WebApplication1.Repos
             return points;
         }
 
-        //计算 30米缓冲区可换乘的公交线路数
+        //计算 30米缓冲区可换乘的公交线路数  2018530 需求变更成500米缓冲站点
+        public IEnumerable<string> SumPointsByBuffer(int pid, double radius)
+        {
+
+            IEnumerable<string> lines = null;
+            //boolean ST_DWithin(geography gg1, geography gg2, double precision distance_meters);
+            string sql = "SELECT distinct t_linepoint.pid FROM t_linepoint "
+                       + " WHERE ST_DWithin(t_linepoint.geom::geography, (select distinct geom from t_linepoint where pid = " + pid + " and (direction = 0 or direction=1) )::geography," + radius + ")";
+            using (var con = Connection)
+            {
+
+                con.Open();
+                lines = con.Query<string>(sql);
+            }
+
+            return lines;
+        }
         public IEnumerable<string> SumCrossingLinesByBuffer(int pid, double radius)
         {
 
@@ -303,6 +348,8 @@ namespace WebApplication1.Repos
             //boolean ST_DWithin(geography gg1, geography gg2, double precision distance_meters);
             string sql = "SELECT distinct t_linepoint.lineguid FROM t_linepoint "
                        + " WHERE ST_DWithin(t_linepoint.geom::geography, (select distinct geom from t_linepoint where pid = " + pid + " and (direction = 0 or direction=1) )::geography," + radius + ")";
+
+
             using (var con = Connection)
             {
 

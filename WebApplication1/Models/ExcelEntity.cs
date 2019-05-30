@@ -45,7 +45,18 @@ namespace WebApplication1.Models
         //public string clinename { get; set; }
         //[ExcelTableColumn("重合率")]
         //public float coincidence { get; set; }
-
+        [ExcelTableColumn("公寓")]
+        public int department { get; set; }
+        [ExcelTableColumn("学校")]
+        public int school { get; set; }
+        [ExcelTableColumn("医院")]
+        public int hospital { get; set; }
+        [ExcelTableColumn("居民小区")]
+        public int community { get; set; }
+        [ExcelTableColumn("大型商业")]
+        public int commerce { get; set; }
+        [ExcelTableColumn("旅游景点")]
+        public int scenicspot { get; set; }
     }
     public class t_divisionnumber_exportview
     {
@@ -101,6 +112,21 @@ namespace WebApplication1.Models
         public string totallength { get; set; }
         [ExcelTableColumn("站点个数")]
         public int stationcount { get; set; }
+
+        [ExcelTableColumn("公寓")]
+        public int department { get; set; }
+        [ExcelTableColumn("学校")]
+        public int school { get; set; }
+        [ExcelTableColumn("医院")]
+        public int hospital { get; set; }
+        [ExcelTableColumn("居民小区")]
+        public int community { get; set; }
+        [ExcelTableColumn("大型商业")]
+        public int commerce { get; set; }
+        [ExcelTableColumn("旅游景点")]
+        public int scenicspot { get; set; }
+
+
         //[ExcelTableColumn("比较线路")]
         //public string clinename { get; set; }
         //[ExcelTableColumn("重合率(%)")]

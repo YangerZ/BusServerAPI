@@ -115,6 +115,14 @@ namespace WebApplication1.Controllers
                         temp.stationcount = item.stationcount;
                         temp.totallength = item.totallength.ToString("N", nfi);
                         temp.linename = item.linename;
+                        //设施统计
+                        temp.department = item.department;
+                        temp.school= item.school;
+                        temp.hospital= item.hospital;
+                        temp.community= item.community;
+                        temp.commerce= item.commerce;
+                        temp.scenicspot= item.scenicspot;
+
                         filters.Add(temp);
                     }
                     exportByte = filters.ToXlsx();

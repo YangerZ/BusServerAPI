@@ -17,6 +17,14 @@ namespace WebApplication1.Models
         public DateTime createtime { get; set; }
         public float totallength { get; set; }
         public int stationcount { get; set; }
+        //缓冲区内设施站点个数
+        public int department { get; set; }
+        public int school { get; set; }
+        public int hospital { get; set; }
+        public int community { get; set; }
+        public int commerce { get; set; }
+        public int scenicspot { get; set; }
+
 
     }
 }
