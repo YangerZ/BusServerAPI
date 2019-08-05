@@ -18,4 +18,15 @@ namespace WebApplication1.Models
         public string guestid { get; set; }
         public string func { get; set; }
     }
+    public class t_userinfo_trans
+    {
+        
+        public string duty { get; set; }
+        public string userid { get; set; }
+        public string role { get; set; }
+        public string realname { get; set; }
+        public string other { get; set; }
+        public string guestid { get; set; }
+        public string func { get; set; }
+    }
 }

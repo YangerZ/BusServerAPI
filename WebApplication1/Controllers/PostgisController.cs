@@ -233,20 +233,20 @@ namespace WebApplication1.Controllers
         #endregion
 
         #region 用户 角色 功能信息CRUD
-        [HttpGet, Route("AllUsers")]
-        public JsonResult GetAllUserInfos()
-        {
-            try
-            {
-                var temp = myPostRepo.GetUserAllTable();
-                return Json(new { success = "200", data = temp });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = "404", error = ex.ToString() });
-            }
+        //[HttpGet, Route("AllUsers")]
+        //public JsonResult GetAllUserInfos()
+        //{
+        //    try
+        //    {
+        //        var temp = myPostRepo.GetUserAllTable();
+        //        return Json(new { success = "200", data = temp });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return Json(new { success = "404", error = ex.ToString() });
+        //    }
 
-        }
+        //}
         //Get bus/spatial/guid
         [HttpGet("userinfo/{userid}")]
         public JsonResult GetSigleDataByUserID(string userid)
@@ -255,7 +255,24 @@ namespace WebApplication1.Controllers
             try
             {
                 temp = myPostRepo.GetSingle_T_UserInfo(userid);
-                return Json(new { success = "200", data = temp });
+               
+                if (temp != null)
+                {
+                    t_userinfo_trans t = new t_userinfo_trans();
+                    t.userid = temp.userid;
+                    t.role = temp.role;
+                    t.realname = temp.realname;
+                    t.other = temp.other;
+                    t.guestid = temp.guestid;
+                    t.func = temp.func;
+                    t.duty = temp.duty;
+                    return Json(new { success = "200", data = t });
+                }
+                else
+                {
+                    return Json(new { success = "200", data = temp });
+                }
+                 
             }
             catch (Exception ex)
             {
@@ -272,7 +289,23 @@ namespace WebApplication1.Controllers
                string password = param_user["password"].ToString();
                string username = param_user["username"].ToString();
                 temp = myPostRepo.GetSingle_T_UserLogin(username,password);
-                return Json(new { success = "200", data = temp });
+                if (temp != null)
+                {
+                    t_userinfo_trans t = new t_userinfo_trans();
+                    t.userid = temp.userid;
+                    t.role = temp.role;
+                    t.realname = temp.realname;
+                    t.other = temp.other;
+                    t.guestid = temp.guestid;
+                    t.func = temp.func;
+                    t.duty = temp.duty;
+                    return Json(new { success = "200", data = t });
+                }
+                else
+                {
+                    return Json(new { success = "200", data = temp });
+                }
+                
             }
             catch (Exception ex)
             {
@@ -281,40 +314,40 @@ namespace WebApplication1.Controllers
         }
         //Post bus/spatial/area body formdata
         //[HttpPost]
-        [HttpPost("userinfo/Add")]
-        public JsonResult AddUserInfo([FromBody] JObject param_user)//[FromBody] Area area)
-        {
-            bool addstatus = false;
-            try
-            {
-                t_userinfo userinfo = new t_userinfo();
-                userinfo.userid = Guid.NewGuid().ToString();
-                userinfo.username = param_user["username"].ToString();
-                userinfo.password = param_user["password"].ToString();
-                userinfo.duty = param_user["duty"].ToString();
-                userinfo.role = param_user["role"].ToString();
-                userinfo.realname = param_user["realname"].ToString();
-                userinfo.other = param_user["other"].ToString();
-                userinfo.guestid = param_user["guestid"].ToString();
-                userinfo.func = param_user["func"].ToString();
-                //检查用户名是否可用
-                bool check = myPostRepo.CheckUserNameEnable(userinfo.username);
-                if (check)
-                {
-                    addstatus = myPostRepo.AddSingle_T_UserInfo(userinfo);
-                }
-                else {
-                    return Json(new { success = "404", data = "repeat"});
-                }
-                //
+        //[HttpPost("userinfo/Add")]
+        //public JsonResult AddUserInfo([FromBody] JObject param_user)//[FromBody] Area area)
+        //{
+        //    bool addstatus = false;
+        //    try
+        //    {
+        //        t_userinfo userinfo = new t_userinfo();
+        //        userinfo.userid = Guid.NewGuid().ToString();
+        //        userinfo.username = param_user["username"].ToString();
+        //        userinfo.password = param_user["password"].ToString();
+        //        userinfo.duty = param_user["duty"].ToString();
+        //        userinfo.role = param_user["role"].ToString();
+        //        userinfo.realname = param_user["realname"].ToString();
+        //        userinfo.other = param_user["other"].ToString();
+        //        userinfo.guestid = param_user["guestid"].ToString();
+        //        userinfo.func = param_user["func"].ToString();
+        //        //检查用户名是否可用
+        //        bool check = myPostRepo.CheckUserNameEnable(userinfo.username);
+        //        if (check)
+        //        {
+        //            addstatus = myPostRepo.AddSingle_T_UserInfo(userinfo);
+        //        }
+        //        else {
+        //            return Json(new { success = "404", data = "repeat"});
+        //        }
+        //        //
                 
-                return Json(new { success = "200", data = addstatus });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = "404", error = ex.ToString() });
-            }
-        }
+        //        return Json(new { success = "200", data = addstatus });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return Json(new { success = "404", error = ex.ToString() });
+        //    }
+        //}
         //[HttpPut("{userid}")]
         [HttpPost("userinfo/set")]
         public JsonResult UpdateUserInfo([FromBody] JObject param_user)
@@ -332,7 +365,13 @@ namespace WebApplication1.Controllers
                 userinfo.other = param_user["other"].ToString();
                 userinfo.guestid = param_user["guestid"].ToString();
                 userinfo.func = param_user["func"].ToString();
+                //验证用户是否可以修改密码
+                //var tempuser= myPostRepo.GetSingle_T_UserLogin(userinfo.username, userinfo.password);
+                //if (tempuser != null&&tempuser.password!=null)
+                //{
                 updatestatus = myPostRepo.Update_T_UserInfo(userinfo);
+                //}
+                //updatestatus = myPostRepo.Update_T_UserInfo(userinfo);
                 return Json(new { success = "200", data = updatestatus });
             }
             catch (Exception ex)
